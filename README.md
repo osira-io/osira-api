@@ -30,11 +30,39 @@ cd osira-api
 make install
 make database-up
 make migrate
-make console ARGS="about"
+make jwt-keys
+php bin/console osira:user:create-admin
+php -S localhost:8000 -t public
 ```
 
 For local configuration overrides, create `.env.local`. Never commit secrets;
-use environment variables or Symfony's secrets management in production.
+use environment variables or Symfony's secrets management in production. Set a
+strong `APP_SECRET` and `JWT_PASSPHRASE` before generating the JWT key pair.
+Private and public PEM files under `config/jwt/` are ignored by Git.
+
+For non-interactive administrator provisioning, avoid a plaintext command-line
+option and read the password from a protected file or standard input:
+
+```bash
+php bin/console osira:user:create-admin \
+  --no-interaction \
+  --email=admin@example.com \
+  --password-file=/run/secrets/osira_admin_password
+```
+
+## Control-plane authentication
+
+Authenticate with the administrator account:
+
+```bash
+curl --request POST http://localhost:8000/api/auth/login \
+  --header 'Content-Type: application/json' \
+  --data '{"email":"admin@example.com","password":"REPLACE_ME"}'
+```
+
+The returned JWT is valid for one hour. Send it as a Bearer token for protected
+control-plane operations such as `GET /api/nodes` and enrollment-token creation.
+Swagger UI exposes the same Bearer mechanism through its Authorize button.
 
 ## Agent enrollment
 
@@ -43,6 +71,7 @@ returned in clear text only once:
 
 ```bash
 curl --request POST http://localhost:8000/api/enrollment-tokens \
+  --header 'Authorization: Bearer REPLACE_WITH_USER_JWT' \
   --header 'Accept: application/json' \
   --header 'Content-Type: application/json' \
   --data '{}'
@@ -68,10 +97,11 @@ never stored and cannot be retrieved later. Nodes can be listed with
 `GET /api/nodes` and read with `GET /api/nodes/{id}`; neither response contains
 credentials.
 
-> [!WARNING]
-> Authentication and administrator identities do not exist yet. Consequently,
-> the enrollment-token creation endpoint is not access-controlled in this first
-> domain slice. It must be protected when administrative authentication lands.
+User accounts and JWTs authenticate administrators and operators of the control
+plane. Osira agents never use these accounts: initial registration uses a
+single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
+`POST /api/agents/enroll` therefore intentionally remains public at the user
+authentication layer.
 
 ## Development checks
 
@@ -96,6 +126,7 @@ command.
 | `make database-up` | Start the local PostgreSQL database |
 | `make migrate` | Apply Doctrine migrations |
 | `make schema-validate` | Validate Doctrine mapping and the database schema |
+| `make jwt-keys` | Generate the ignored JWT signing key pair |
 | `make openapi` | Export the API contract to `var/openapi.json` |
 | `make console ARGS="about"` | Run a Symfony console command |
 

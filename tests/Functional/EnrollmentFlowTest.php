@@ -7,12 +7,14 @@ namespace App\Tests\Functional;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\EnrollmentToken;
+use App\Entity\User;
 use App\Security\TokenGenerator;
 use App\Security\TokenHasher;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[CoversNothing]
 final class EnrollmentFlowTest extends ApiTestCase
@@ -37,7 +39,10 @@ final class EnrollmentFlowTest extends ApiTestCase
     public function testAdministratorCanCreateOneTimeEnrollmentToken(): void
     {
         $client = self::createJsonClient();
-        $response = $client->request('POST', '/api/enrollment-tokens', ['json' => []]);
+        $response = $client->request('POST', '/api/enrollment-tokens', [
+            'auth_bearer' => $this->createUserAndLogin($client, ['ROLE_ADMIN']),
+            'json' => [],
+        ]);
 
         self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
 
@@ -61,7 +66,7 @@ final class EnrollmentFlowTest extends ApiTestCase
     public function testAgentCanEnrollSuccessfully(): void
     {
         $client = self::createJsonClient();
-        $rawEnrollmentToken = $this->issueEnrollmentToken($client);
+        $rawEnrollmentToken = $this->persistEnrollmentToken(new \DateTimeImmutable(), new \DateTimeImmutable('+15 minutes'));
 
         $response = $this->enroll($client, $rawEnrollmentToken);
 
@@ -128,13 +133,14 @@ final class EnrollmentFlowTest extends ApiTestCase
     public function testNodeEndpointsNeverExposeCredentials(): void
     {
         $client = self::createJsonClient();
-        $rawEnrollmentToken = $this->issueEnrollmentToken($client);
+        $rawEnrollmentToken = $this->persistEnrollmentToken(new \DateTimeImmutable(), new \DateTimeImmutable('+15 minutes'));
         $enrollmentResponse = $this->enroll($client, $rawEnrollmentToken);
         $enrollmentPayload = $enrollmentResponse->toArray();
         self::assertIsString($enrollmentPayload['nodeId']);
         self::assertIsString($enrollmentPayload['agentToken']);
 
-        $collectionResponse = $client->request('GET', '/api/nodes');
+        $jwt = $this->createUserAndLogin($client, ['ROLE_USER']);
+        $collectionResponse = $client->request('GET', '/api/nodes', ['auth_bearer' => $jwt]);
         self::assertResponseIsSuccessful();
         $collectionBody = $collectionResponse->getContent(false);
         self::assertStringContainsString('srv-prod-01', $collectionBody);
@@ -143,7 +149,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         self::assertStringNotContainsString('tokenHash', $collectionBody);
         self::assertStringNotContainsString('credential', $collectionBody);
 
-        $itemResponse = $client->request('GET', '/api/nodes/'.$enrollmentPayload['nodeId']);
+        $itemResponse = $client->request('GET', '/api/nodes/'.$enrollmentPayload['nodeId'], ['auth_bearer' => $jwt]);
         self::assertResponseIsSuccessful();
         $itemBody = $itemResponse->getContent(false);
         self::assertStringContainsString('srv-prod-01', $itemBody);
@@ -153,10 +159,20 @@ final class EnrollmentFlowTest extends ApiTestCase
         self::assertStringNotContainsString('credential', $itemBody);
     }
 
-    private function issueEnrollmentToken(Client $client): string
+    /** @param list<string> $roles */
+    private function createUserAndLogin(Client $client, array $roles): string
     {
-        $response = $client->request('POST', '/api/enrollment-tokens', ['json' => []]);
-        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $user = new User('admin@example.com', $roles, new \DateTimeImmutable());
+        $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
+        $user->setPasswordHash($passwordHasher->hashPassword($user, 'correct horse battery staple'), new \DateTimeImmutable());
+        $entityManager = $this->entityManager();
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        $response = $client->request('POST', '/api/auth/login', [
+            'json' => ['email' => 'admin@example.com', 'password' => 'correct horse battery staple'],
+        ]);
+        self::assertResponseIsSuccessful();
 
         $payload = $response->toArray();
         self::assertIsString($payload['token']);

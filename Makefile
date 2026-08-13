@@ -10,7 +10,7 @@ DOCKER ?= docker
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate openapi cache-clear cache-warmup console
+.PHONY: help install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -68,6 +68,9 @@ migrate: ## Apply Doctrine migrations to the configured database.
 
 schema-validate: ## Validate Doctrine mapping and database schema.
 	$(PHP) bin/console doctrine:schema:validate
+
+jwt-keys: ## Generate the ignored JWT signing key pair without overwriting existing keys.
+	$(PHP) bin/console lexik:jwt:generate-keypair --skip-if-exists
 
 openapi: ## Export the OpenAPI document to var/openapi.json.
 	$(PHP) bin/console api:openapi:export --output=var/openapi.json

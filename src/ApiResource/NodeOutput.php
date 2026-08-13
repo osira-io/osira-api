@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\State\NodeProvider;
 
 #[ApiResource(
@@ -17,11 +18,13 @@ use App\State\NodeProvider;
             uriTemplate: '/nodes',
             paginationEnabled: false,
             provider: NodeProvider::class,
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
         new Get(
             uriTemplate: '/nodes/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
             provider: NodeProvider::class,
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
     ],
 )]

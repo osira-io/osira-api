@@ -7,6 +7,7 @@ namespace App\ApiResource;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Dto\CreateEnrollmentTokenInput;
 use App\State\CreateEnrollmentTokenProcessor;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
             output: self::class,
             read: false,
             processor: CreateEnrollmentTokenProcessor::class,
+            openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
     ],
 )]

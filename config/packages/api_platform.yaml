@@ -15,3 +15,8 @@ api_platform:
         pagination_client_enabled: false
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+    swagger:
+        http_auth:
+            JWT:
+                scheme: bearer
+                bearerFormat: JWT

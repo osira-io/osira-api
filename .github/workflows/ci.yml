@@ -86,6 +86,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Generate ephemeral JWT signing keys
+        env:
+          JWT_PASSPHRASE: osira-ci-passphrase
+        run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
       - name: Run PostgreSQL migrations
         env:
           DATABASE_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
