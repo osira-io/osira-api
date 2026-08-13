@@ -1,7 +1,26 @@
 
 services:
+  app:
+    build:
+      target: development
+    restart: "no"
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      SERVER_NAME: :80
+      FRANKENPHP_CONFIG: ""
+    ports:
+      - "${HTTP_PORT:-8000}:80"
+    volumes:
+      - ./:/app
+      - development_vendor:/app/vendor
+    tty: true
+
 ###> doctrine/doctrine-bundle ###
   database:
     ports:
       - "5432:5432"
 ###< doctrine/doctrine-bundle ###
+
+volumes:
+  development_vendor:

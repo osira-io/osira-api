@@ -14,25 +14,28 @@ are intentionally outside this repository's current scope.
 
 ## Requirements
 
-- PHP 8.4 or newer
-- [Composer](https://getcomposer.org/)
 - GNU Make
-- Docker with Compose, for the local PostgreSQL database
+- Docker with Compose
 
-Docker is also used to reproduce the GitHub Actions lint locally with
-`make workflow-lint` or the complete `make ci` target.
+PHP 8.4, Composer, PostgreSQL, FrankenPHP and Caddy are provided by the Docker
+stack. A compatible local PHP installation remains useful for quality checks,
+but is not required to start Osira.
 
 ## Getting started
 
 ```bash
 git clone https://github.com/osira-io/osira-api.git
 cd osira-api
-make install
-make database-up
-make migrate
-make jwt-keys
-php bin/console osira:user:create-admin
-php -S localhost:8000 -t public
+make dev
+```
+
+`make dev` builds the PHP image, installs dependencies, starts PostgreSQL,
+generates missing JWT keys, applies migrations, then serves the API through
+FrankenPHP and Caddy at `http://localhost:8000`. The first
+administrator can be created from another terminal:
+
+```bash
+make console ARGS="osira:user:create-admin"
 ```
 
 For local configuration overrides, create `.env.local`. Never commit secrets;
@@ -40,11 +43,34 @@ use environment variables or Symfony's secrets management in production. Set a
 strong `APP_SECRET` and `JWT_PASSPHRASE` before generating the JWT key pair.
 Private and public PEM files under `config/jwt/` are ignored by Git.
 
+### Production
+
+Provision `APP_SECRET`, `JWT_PASSPHRASE`, a PostgreSQL password and the JWT key
+pair before starting the application. Then run, for example:
+
+```bash
+APP_SECRET='replace-me' \
+JWT_PASSPHRASE='replace-me' \
+POSTGRES_PASSWORD='replace-me' \
+SERVER_NAME='api.example.com' \
+make prod
+```
+
+This builds an immutable production image with PHP's production configuration,
+authoritative Composer autoloading and OPcache; applies migrations; warms the
+Symfony cache; then starts Caddy and FrankenPHP in worker mode. Caddy manages
+HTTPS automatically when `SERVER_NAME` contains a real domain.
+
+Use `make prod-prepare` as a deployment stage when the application container is
+started separately by an orchestrator.
+
 For non-interactive administrator provisioning, avoid a plaintext command-line
 option and read the password from a protected file or standard input:
 
 ```bash
-php bin/console osira:user:create-admin \
+docker compose run --rm -T \
+  --volume /secure/path/admin-password:/run/secrets/osira_admin_password:ro \
+  app php bin/console osira:user:create-admin \
   --no-interaction \
   --email=admin@example.com \
   --password-file=/run/secrets/osira_admin_password
@@ -117,6 +143,14 @@ command.
 
 | Command | Purpose |
 | --- | --- |
+| `make dev` | Prepare and start the complete local development environment |
+| `make dev-setup` | Prepare development without starting the HTTP server |
+| `make dev-stop` | Stop the development stack without deleting its data |
+| `make dev-logs` | Follow FrankenPHP development logs |
+| `make prod` | Build and start the production FrankenPHP/Caddy stack |
+| `make prod-prepare` | Build the production image and apply migrations |
+| `make prod-stop` | Stop the production stack without deleting its data |
+| `make prod-logs` | Follow FrankenPHP production logs |
 | `make install` | Install locked dependencies and initialize Git hooks |
 | `make qa` | Run linting, coding standards, PHPStan, PHPUnit, and security checks |
 | `make ci` | Reproduce the complete CI gate locally; requires Docker |

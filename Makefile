@@ -7,13 +7,58 @@ MAKEFLAGS += --no-builtin-rules
 PHP ?= php
 COMPOSER ?= composer
 DOCKER ?= docker
+HTTP_PORT ?= 8000
+
+COMPOSE_DEV := $(DOCKER) compose
+COMPOSE_PROD := $(DOCKER) compose -f compose.yaml -f compose.prod.yaml
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
+.PHONY: help dev dev-setup dev-stop dev-logs prod prod-prepare prod-stop prod-logs install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+dev-setup: ## Build containers, install dependencies, generate keys, and migrate development.
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) build app
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) up --detach --wait database
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) run --rm --no-deps app composer install --prefer-dist --no-interaction --no-progress
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) run --rm --no-deps app php bin/console lexik:jwt:generate-keypair --skip-if-exists
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) run --rm --no-deps app chmod 0600 config/jwt/private.pem
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) run --rm --no-deps app chmod 0644 config/jwt/public.pem
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) run --rm app php bin/console doctrine:migrations:migrate --no-interaction
+
+dev: dev-setup ## Prepare and start the complete development stack with FrankenPHP.
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE_DEV) up --detach --wait app
+	@echo "Osira API is available at http://localhost:$(HTTP_PORT)"
+
+dev-stop: ## Stop the development stack without deleting data.
+	$(COMPOSE_DEV) stop
+
+dev-logs: ## Follow development application logs.
+	$(COMPOSE_DEV) logs --follow app
+
+prod-prepare: ## Build the immutable production image and apply migrations.
+	@test -n "$(APP_SECRET)" || (echo "APP_SECRET is required" >&2; exit 1)
+	@test -n "$(JWT_PASSPHRASE)" || (echo "JWT_PASSPHRASE is required" >&2; exit 1)
+	@test -n "$(POSTGRES_PASSWORD)" || (echo "POSTGRES_PASSWORD is required" >&2; exit 1)
+	@test -s config/jwt/private.pem || (echo "config/jwt/private.pem is required" >&2; exit 1)
+	@test -s config/jwt/public.pem || (echo "config/jwt/public.pem is required" >&2; exit 1)
+	chmod 0600 config/jwt/private.pem
+	chmod 0644 config/jwt/public.pem
+	$(COMPOSE_PROD) build --pull app
+	$(COMPOSE_PROD) up --detach --wait database
+	$(COMPOSE_PROD) run --rm app php bin/console doctrine:migrations:migrate --no-interaction
+
+prod: prod-prepare ## Start the production stack with FrankenPHP, Caddy, and worker mode.
+	$(COMPOSE_PROD) up --detach --wait app
+	@echo "Osira API production stack is running."
+
+prod-stop: ## Stop the production stack without deleting data.
+	$(COMPOSE_PROD) stop
+
+prod-logs: ## Follow production application logs.
+	$(COMPOSE_PROD) logs --follow app
 
 install: ## Install locked dependencies and initialize Git hooks.
 	$(COMPOSER) install --prefer-dist --no-interaction --no-progress
@@ -64,22 +109,24 @@ database-down: ## Stop the local PostgreSQL container without deleting its data.
 	$(DOCKER) compose stop database
 
 migrate: ## Apply Doctrine migrations to the configured database.
-	$(PHP) bin/console doctrine:migrations:migrate --no-interaction
+	$(COMPOSE_DEV) run --rm --build app php bin/console doctrine:migrations:migrate --no-interaction
 
 schema-validate: ## Validate Doctrine mapping and database schema.
-	$(PHP) bin/console doctrine:schema:validate
+	$(COMPOSE_DEV) run --rm --build app php bin/console doctrine:schema:validate
 
 jwt-keys: ## Generate the ignored JWT signing key pair without overwriting existing keys.
-	$(PHP) bin/console lexik:jwt:generate-keypair --skip-if-exists
+	$(COMPOSE_DEV) run --rm --no-deps --build app php bin/console lexik:jwt:generate-keypair --skip-if-exists
+	$(COMPOSE_DEV) run --rm --no-deps app chmod 0600 config/jwt/private.pem
+	$(COMPOSE_DEV) run --rm --no-deps app chmod 0644 config/jwt/public.pem
 
 openapi: ## Export the OpenAPI document to var/openapi.json.
-	$(PHP) bin/console api:openapi:export --output=var/openapi.json
+	$(COMPOSE_DEV) run --rm --no-deps --build app php bin/console api:openapi:export --output=var/openapi.json
 
 cache-clear: ## Clear the Symfony cache; pass an environment with ARGS="--env=test".
-	$(PHP) bin/console cache:clear $(ARGS)
+	$(COMPOSE_DEV) run --rm --no-deps --build app php bin/console cache:clear $(ARGS)
 
 cache-warmup: ## Warm the Symfony cache; pass an environment with ARGS="--env=test".
-	$(PHP) bin/console cache:warmup $(ARGS)
+	$(COMPOSE_DEV) run --rm --no-deps --build app php bin/console cache:warmup $(ARGS)
 
 console: ## Run a Symfony command, for example ARGS="about".
-	$(PHP) bin/console $(ARGS)
+	$(COMPOSE_DEV) run --rm --build app php bin/console $(ARGS)

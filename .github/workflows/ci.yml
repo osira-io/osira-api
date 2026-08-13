@@ -31,6 +31,25 @@ jobs:
       - name: Lint workflows
         uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
 
+  production-image:
+    name: Production container
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build production image
+        run: docker build --target production --tag osira-api:test .
+
+      - name: Verify production PHP extensions
+        run: >-
+          docker run --rm osira-api:test php -r
+          'exit(extension_loaded("pdo_pgsql") && extension_loaded("Zend OPcache") ? 0 : 1);'
+
   quality:
     name: Quality / PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
