@@ -10,7 +10,7 @@ DOCKER ?= docker
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks cache-clear cache-warmup console
+.PHONY: help install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -56,6 +56,21 @@ workflow-lint: ## Lint GitHub Actions workflows in the pinned actionlint image.
 
 hooks: ## Install or refresh GrumPHP Git hooks.
 	$(PHP) vendor/bin/grumphp git:init
+
+database-up: ## Start PostgreSQL and wait until it is healthy.
+	$(DOCKER) compose up --detach --wait database
+
+database-down: ## Stop the local PostgreSQL container without deleting its data.
+	$(DOCKER) compose stop database
+
+migrate: ## Apply Doctrine migrations to the configured database.
+	$(PHP) bin/console doctrine:migrations:migrate --no-interaction
+
+schema-validate: ## Validate Doctrine mapping and database schema.
+	$(PHP) bin/console doctrine:schema:validate
+
+openapi: ## Export the OpenAPI document to var/openapi.json.
+	$(PHP) bin/console api:openapi:export --output=var/openapi.json
 
 cache-clear: ## Clear the Symfony cache; pass an environment with ARGS="--env=test".
 	$(PHP) bin/console cache:clear $(ARGS)

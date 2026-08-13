@@ -1,0 +1,17 @@
+api_platform:
+    title: Osira API
+    description: Self-hosted monitoring control plane API.
+    version: 0.1.0
+    formats:
+        json: ['application/json']
+    docs_formats:
+        jsonopenapi: ['application/vnd.openapi+json']
+        html: ['text/html']
+    mapping:
+        paths:
+            - '%kernel.project_dir%/src/ApiResource'
+    defaults:
+        stateless: true
+        pagination_client_enabled: false
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
