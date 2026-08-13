@@ -1,0 +1,67 @@
+name: Bug report
+description: Report reproducible behavior that does not work as expected.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Osira API. Search existing issues first and never include secrets or production data.
+  - type: input
+    id: version
+    attributes:
+      label: Osira API version
+      description: Provide a release, tag, or commit SHA.
+      placeholder: main at 0123456
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include PHP version, operating system, and installation method.
+      placeholder: PHP 8.4, Debian 13, Composer install
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clearly describe the observed behavior and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable sequence that demonstrates the problem.
+      placeholder: |
+        1. Configure ...
+        2. Send ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or context
+      description: Paste sanitized logs, stack traces, configuration, or screenshots. Remove all secrets and personal data.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for an existing issue describing this problem.
+          required: true
+        - label: I removed credentials, tokens, private URLs, and personal data.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true
