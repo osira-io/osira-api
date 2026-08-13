@@ -6,6 +6,7 @@ on:
       - main
       - develop
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:
@@ -16,10 +17,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: PHP ${{ matrix.php }}
+  workflow-lint:
+    name: GitHub Actions lint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Lint workflows
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
+
+  quality:
+    name: Quality / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -38,24 +53,85 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+          extensions: ctype, dom, iconv, json, mbstring, simplexml, tokenizer, xml, xmlwriter
+          ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 
-      - name: Validate Composer configuration
-        run: composer validate --strict --no-check-publish
+      - name: Resolve Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php-${{ matrix.php }}-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Check known dependency vulnerabilities
-        run: composer audit --locked --no-interaction
+      - name: Validate Composer configuration
+        run: make validate
 
-      - name: Lint YAML configuration
-        run: php bin/console lint:yaml config
+      - name: Lint PHP, YAML, and the service container
+        run: make lint
 
-      - name: Lint service container
-        run: php bin/console lint:container
+      - name: Check coding standards
+        run: make cs-check
 
-      - name: Warm up test cache
-        env:
-          APP_ENV: test
-        run: php bin/console cache:warmup
+      - name: Run static analysis
+        run: make analyse
+
+      - name: Run tests
+        run: make test
+
+      - name: Audit dependencies
+        run: make security
+
+  lowest-dependencies:
+    name: Lowest supported dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.4"
+          coverage: none
+          extensions: ctype, dom, iconv, json, mbstring, simplexml, tokenizer, xml, xmlwriter
+          ini-values: memory_limit=-1, error_reporting=E_ALL
+          tools: composer:v2
+
+      - name: Install lowest supported dependency versions
+        run: composer update --prefer-lowest --prefer-dist --no-interaction --no-progress
+
+      - name: Run quality gate against lowest versions
+        run: make qa
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+          fail-on-scopes: runtime, development
+          license-check: true
+          vulnerability-check: true

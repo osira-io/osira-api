@@ -15,14 +15,18 @@ expose monitoring data through a modern API.
 
 - PHP 8.4 or newer
 - [Composer](https://getcomposer.org/)
+- GNU Make
+
+Docker is optional and is only required to reproduce the GitHub Actions lint
+locally with `make workflow-lint` or the complete `make ci` target.
 
 ## Getting started
 
 ```bash
 git clone https://github.com/osira-io/osira-api.git
 cd osira-api
-composer install
-php bin/console about
+make install
+make console ARGS="about"
 ```
 
 For local configuration overrides, create `.env.local`. Never commit secrets;
@@ -30,13 +34,29 @@ use environment variables or Symfony's secrets management in production.
 
 ## Development checks
 
-Run the same checks used by continuous integration:
+Run the application quality gate:
 
 ```bash
-composer validate --strict
-php bin/console lint:yaml config
-php bin/console lint:container
+make qa
 ```
+
+Use `make ci` to run the strictest local gate, including Composer validation,
+GrumPHP, and GitHub Actions linting. Run `make help` to list every available
+command.
+
+| Command | Purpose |
+| --- | --- |
+| `make install` | Install locked dependencies and initialize Git hooks |
+| `make qa` | Run linting, coding standards, PHPStan, PHPUnit, and security checks |
+| `make ci` | Reproduce the complete CI gate locally; requires Docker |
+| `make cs-fix` | Automatically fix PHP coding-standard violations |
+| `make analyse` | Run PHPStan at the maximum level |
+| `make test` | Run PHPUnit; use `ARGS="--filter Name"` to select tests |
+| `make console ARGS="about"` | Run a Symfony console command |
+
+GrumPHP installs Git hooks through Composer and runs the relevant checks before
+every commit. Commit messages must follow the Conventional Commits format, for
+example `feat(api): add host registration`.
 
 ## Contributing
 

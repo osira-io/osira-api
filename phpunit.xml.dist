@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.5/phpunit.xsd" bootstrap="tests/bootstrap.php" cacheDirectory=".phpunit.cache" colors="true" beStrictAboutCoverageMetadata="true" beStrictAboutOutputDuringTests="true" failOnDeprecation="true" failOnEmptyTestSuite="true" failOnIncomplete="true" failOnNotice="true" failOnPhpunitDeprecation="true" failOnRisky="true" failOnSkipped="true" failOnWarning="true" requireCoverageMetadata="true">
+  <php>
+    <env name="APP_ENV" value="test" force="true"/>
+    <env name="APP_DEBUG" value="1" force="true"/>
+    <env name="SHELL_VERBOSITY" value="-1"/>
+  </php>
+  <testsuites>
+    <testsuite name="Osira API test suite">
+      <directory>tests</directory>
+    </testsuite>
+  </testsuites>
+  <source restrictNotices="true" restrictWarnings="true" ignoreIndirectDeprecations="true">
+    <include>
+      <directory suffix=".php">src</directory>
+    </include>
+  </source>
+</phpunit>

@@ -14,13 +14,14 @@ documentation, tests, bug reports, and design feedback are welcome.
 
 ## Local setup
 
-You need PHP 8.4 or newer and Composer.
+You need PHP 8.4 or newer, Composer, and GNU Make. Docker is optional, but is
+required to run the complete local CI target.
 
 ```bash
 git clone https://github.com/osira-io/osira-api.git
 cd osira-api
-composer install
-php bin/console about
+make install
+make console ARGS="about"
 ```
 
 Store local configuration in `.env.local`. Never commit credentials, tokens,
@@ -36,10 +37,20 @@ private keys, production data, or other secrets.
 5. Run the project checks locally.
 
 ```bash
-composer validate --strict
-php bin/console lint:yaml config
-php bin/console lint:container
+make qa
 ```
+
+Before opening a pull request, run the complete gate when Docker is available:
+
+```bash
+make ci
+```
+
+Run `make cs-fix` before committing to automatically fix coding-standard
+violations. Use `make test ARGS="--filter TestName"` for a focused test run and
+`make help` to discover the other commands. GrumPHP also runs the quality gate
+from Git hooks. Commit messages must follow Conventional Commits, such as
+`fix(api): reject an invalid host`.
 
 If a test suite is present for the area you change, run it and include the
 command and result in your pull request.
