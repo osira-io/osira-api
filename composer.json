@@ -1,4 +1,6 @@
 {
+    "name": "osira/osira-api",
+    "description": "Osira API",
     "license": "AGPL-3.0-only",
     "type": "project",
     "require": {

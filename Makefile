@@ -31,6 +31,13 @@ dev: dev-setup ## Prepare and start the complete development stack with FrankenP
 	HTTP_PORT=$(HTTP_PORT) $(COMPOSE) up --detach --wait app
 	@echo "Osira API is available at http://localhost:$(HTTP_PORT)"
 
+down: ## Stop the development stack and remove containers.
+	$(COMPOSE) down
+
+up: ## Start the development stack without rebuilding containers.
+	HTTP_PORT=$(HTTP_PORT) $(COMPOSE) up --detach --wait app
+	@echo "Osira API is available at http://localhost:$(HTTP_PORT)"
+
 dev-stop: ## Stop the development stack without deleting data.
 	$(COMPOSE) stop
 
