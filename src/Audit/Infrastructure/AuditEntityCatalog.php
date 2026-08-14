@@ -27,6 +27,22 @@ final class AuditEntityCatalog
         'EnrollmentToken' => EnrollmentToken::class,
     ];
 
+    /**
+     * Internal allowlist of the DH Auditor storage table for each audited entity. These are the
+     * only table names the SQL reader may interpolate as identifiers — never a user-supplied value.
+     *
+     * @var array<string, string>
+     */
+    public const array TABLES = [
+        'User' => 'audit_users',
+        'Role' => 'audit_roles',
+        'Permission' => 'audit_permissions',
+        'Node' => 'audit_nodes',
+        'NodeGroup' => 'audit_node_groups',
+        'Agent' => 'audit_agents',
+        'EnrollmentToken' => 'audit_enrollment_tokens',
+    ];
+
     /** @return array<string, class-string> */
     public static function entities(?string $name = null): array
     {
@@ -40,6 +56,21 @@ final class AuditEntityCatalog
         }
 
         return [$name => $class];
+    }
+
+    /** @return array<string, string> */
+    public static function tables(?string $name = null): array
+    {
+        if (null === $name) {
+            return self::TABLES;
+        }
+
+        $table = self::TABLES[$name] ?? null;
+        if (null === $table) {
+            throw new \InvalidArgumentException(\sprintf('Unknown audited entity "%s".', $name));
+        }
+
+        return [$name => $table];
     }
 
     private function __construct()
