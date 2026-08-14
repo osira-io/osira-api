@@ -130,6 +130,45 @@ Future integrations may add explicit idempotent upsert endpoints such as
 `PUT /api/integrations/{source}/users/{externalId}`. No such integration or
 upsert behavior is implemented by the standard REST endpoints today.
 
+## Current user context
+
+An authenticated frontend retrieves its current context with `GET /api/me`.
+The response contains the user ID, email, locale, lightweight role summaries,
+and the effective permission codes calculated by the API:
+
+```json
+{
+  "id": "01K...",
+  "email": "operator@example.com",
+  "locale": "en",
+  "roles": [
+    {"id": "01K...", "name": "Operator", "slug": "operator"}
+  ],
+  "permissions": [
+    "node_groups.read",
+    "nodes.read",
+    "nodes.update"
+  ]
+}
+```
+
+The permission list is the deduplicated union of every assigned role. Super
+Admins receive every known permission code. A frontend can use that list for
+presentation decisions such as `can('nodes.update')`; it must never infer
+access from a role name such as `role === 'Admin'`. The API remains the source
+of truth and rechecks authorization for every protected operation.
+
+Roles and permissions are deliberately not embedded in the JWT as the business
+authorization source. Changes made in PostgreSQL therefore take effect on the
+next request without waiting for token expiration.
+
+`PATCH /api/me` currently accepts only `{"locale":"en"}`. The supported locale
+list is centralized in the application and currently contains only `en`; no
+automatic `Accept-Language` selection is performed. Permission codes such as
+`nodes.read` are stable technical identifiers and are never translated. A
+future localization layer may translate human-facing permission names,
+descriptions, and categories without changing those codes.
+
 ## Agent enrollment
 
 An enrollment token is single-use, expires after 15 minutes by default, and is
