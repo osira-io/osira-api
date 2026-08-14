@@ -96,6 +96,37 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringNotContainsString('tokenHash', json_encode($document, \JSON_THROW_ON_ERROR));
     }
 
+    public function testTagsAreInDeterministicOrder(): void
+    {
+        $client = self::createClient();
+        $response = $client->request('GET', '/api/docs.jsonopenapi', [
+            'headers' => ['accept' => 'application/vnd.openapi+json'],
+        ]);
+        $document = self::responseObject($response);
+        $tags = $document['tags'] ?? null;
+        self::assertIsArray($tags);
+
+        $names = array_map(static function (mixed $tag): string {
+            self::assertIsArray($tag);
+            $name = $tag['name'] ?? null;
+            self::assertIsString($name);
+
+            return $name;
+        }, $tags);
+
+        self::assertSame([
+            'CurrentUser',
+            'User',
+            'Role',
+            'Permission',
+            'Node',
+            'NodeGroup',
+            'EnrollmentToken',
+            'AgentEnrollment',
+            'Audit',
+        ], $names);
+    }
+
     /** @return array<string, mixed> */
     private static function responseObject(ResponseInterface $response): array
     {
