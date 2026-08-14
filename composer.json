@@ -19,6 +19,7 @@
         "symfony/framework-bundle": "~8.1.0",
         "symfony/runtime": "~8.1.0",
         "symfony/security-bundle": "~8.1.2",
+        "symfony/twig-bundle": "^8.0",
         "symfony/uid": "~8.1.4",
         "symfony/validator": "~8.1.4",
         "symfony/yaml": "~8.1.0"

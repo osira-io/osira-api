@@ -17,7 +17,7 @@ are intentionally outside this repository's current scope.
 - GNU Make
 - Docker with Compose
 
-PHP 8.4, Composer, PostgreSQL, FrankenPHP and Caddy are provided by the Docker
+PHP 8.4, Composer, PostgreSQL and FrankenPHP are provided by the development
 stack. A compatible local PHP installation remains useful for quality checks,
 but is not required to start Osira.
 
@@ -31,38 +31,18 @@ make dev
 
 `make dev` builds the PHP image, installs dependencies, starts PostgreSQL,
 generates missing JWT keys, applies migrations, then serves the API through
-FrankenPHP and Caddy at `http://localhost:8000`. The first
+FrankenPHP at `http://localhost:8000`. This address redirects to the Swagger UI,
+which is also available directly at `http://localhost:8000/api/docs`. The first
 administrator can be created from another terminal:
 
 ```bash
 make console ARGS="osira:user:create-admin"
 ```
 
-For local configuration overrides, create `.env.local`. Never commit secrets;
-use environment variables or Symfony's secrets management in production. Set a
-strong `APP_SECRET` and `JWT_PASSPHRASE` before generating the JWT key pair.
-Private and public PEM files under `config/jwt/` are ignored by Git.
-
-### Production
-
-Provision `APP_SECRET`, `JWT_PASSPHRASE`, a PostgreSQL password and the JWT key
-pair before starting the application. Then run, for example:
-
-```bash
-APP_SECRET='replace-me' \
-JWT_PASSPHRASE='replace-me' \
-POSTGRES_PASSWORD='replace-me' \
-SERVER_NAME='api.example.com' \
-make prod
-```
-
-This builds an immutable production image with PHP's production configuration,
-authoritative Composer autoloading and OPcache; applies migrations; warms the
-Symfony cache; then starts Caddy and FrankenPHP in worker mode. Caddy manages
-HTTPS automatically when `SERVER_NAME` contains a real domain.
-
-Use `make prod-prepare` as a deployment stage when the application container is
-started separately by an orchestrator.
+For local configuration overrides, create `.env.local`. Never commit secrets.
+Private and public PEM files under `config/jwt/` are ignored by Git. This Docker
+configuration is intended for development only; production deployment is not
+defined by this repository yet.
 
 For non-interactive administrator provisioning, avoid a plaintext command-line
 option and read the password from a protected file or standard input:
@@ -147,10 +127,6 @@ command.
 | `make dev-setup` | Prepare development without starting the HTTP server |
 | `make dev-stop` | Stop the development stack without deleting its data |
 | `make dev-logs` | Follow FrankenPHP development logs |
-| `make prod` | Build and start the production FrankenPHP/Caddy stack |
-| `make prod-prepare` | Build the production image and apply migrations |
-| `make prod-stop` | Stop the production stack without deleting its data |
-| `make prod-logs` | Follow FrankenPHP production logs |
 | `make install` | Install locked dependencies and initialize Git hooks |
 | `make qa` | Run linting, coding standards, PHPStan, PHPUnit, and security checks |
 | `make ci` | Reproduce the complete CI gate locally; requires Docker |

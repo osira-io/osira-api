@@ -8,5 +8,3 @@ var
 vendor
 .env.local
 .env.*.local
-compose.override.yaml
-compose.prod.yaml

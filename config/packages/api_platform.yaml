@@ -2,8 +2,12 @@ api_platform:
     title: Osira API
     description: Self-hosted monitoring control plane API.
     version: 0.1.0
+    enable_swagger: true
+    enable_swagger_ui: true
+    enable_re_doc: false
     formats:
         json: ['application/json']
+        jsonld: ['application/ld+json']
     docs_formats:
         jsonopenapi: ['application/vnd.openapi+json']
         html: ['text/html']
@@ -16,7 +20,12 @@ api_platform:
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
     swagger:
+        persist_authorization: true
         http_auth:
             JWT:
                 scheme: bearer
                 bearerFormat: JWT
+        swagger_ui_extra_configuration:
+            docExpansion: list
+            displayRequestDuration: true
+            filter: true

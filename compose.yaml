@@ -3,11 +3,10 @@ services:
   app:
     build:
       context: .
-      target: production
-    restart: unless-stopped
+    restart: "no"
     environment:
-      APP_ENV: ${APP_ENV:-prod}
-      APP_DEBUG: ${APP_DEBUG:-0}
+      APP_ENV: dev
+      APP_DEBUG: 1
       APP_SECRET: ${APP_SECRET:-dev-only-secret}
       DATABASE_URL: postgresql://${POSTGRES_USER:-osira}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-osira}?serverVersion=16&charset=utf8
       JWT_SECRET_KEY: /app/config/jwt/private.pem
@@ -15,6 +14,7 @@ services:
       JWT_PASSPHRASE: ${JWT_PASSPHRASE:-change-me-in-env-local}
       SERVER_NAME: ${SERVER_NAME:-:80}
       SERVER_ROOT: /app/public
+      FRANKENPHP_CONFIG: ""
     depends_on:
       database:
         condition: service_healthy
@@ -24,10 +24,13 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+    ports:
+      - "${HTTP_PORT:-8000}:80"
     volumes:
+      - ./:/app
+      - development_vendor:/app/vendor
       - ./config/jwt:/app/config/jwt
-      - caddy_data:/data
-      - caddy_config:/config
+    tty: true
 
 ###> doctrine/doctrine-bundle ###
   database:
@@ -46,11 +49,12 @@ services:
       - database_data:/var/lib/postgresql/data:rw
       # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
       # - ./docker/db/data:/var/lib/postgresql/data:rw
+    ports:
+      - "5432:5432"
 ###< doctrine/doctrine-bundle ###
 
 volumes:
-  caddy_data:
-  caddy_config:
+  development_vendor:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###
