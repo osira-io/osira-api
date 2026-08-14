@@ -7,6 +7,11 @@
 [![Symfony 8.1](https://img.shields.io/badge/Symfony-8.1-000000.svg?logo=symfony&logoColor=white)](https://symfony.com/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
+Codecov uploads use GitHub OIDC and do not require a repository token. The
+[Codecov GitHub App](https://github.com/apps/codecov) must nevertheless be
+installed for `osira-io/osira-api`, and the repository must be activated in
+Codecov before its first report can be processed.
+
 Osira API is the Symfony and API Platform control plane for an open-source,
 self-hosted monitoring platform. It uses Doctrine ORM and PostgreSQL. A separate
 Rust service will handle high-frequency metrics and heartbeats; those concerns
