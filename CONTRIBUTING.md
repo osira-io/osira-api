@@ -84,6 +84,13 @@ the category it genuinely belongs to, not the category that fills out a
 target layout. `tests/Unit/` and `tests/Integration/` will be created
 organically as the corresponding test types are introduced.
 
+Most tests run against the SQLite database configured in `.env.test`. A few
+exercise PostgreSQL-specific SQL (e.g. the `Audit` feature's `UNION ALL`
+reader) and must be validated against real PostgreSQL 16 in addition to the
+default run. Use `make test-postgres` for that — it provisions a dedicated
+`osira_test` database and runs PHPUnit against it (`make test-postgres
+ARGS="tests/Functional/Audit"` to scope the run).
+
 ## Commits and pull requests
 
 Write clear, imperative commit messages. A pull request should explain the

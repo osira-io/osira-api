@@ -30,28 +30,20 @@ final readonly class AuditUnionQuery
     /** @var array<string, mixed> */
     private array $unionParams;
 
-    /** @var array<string, ParameterType> */
-    private array $unionTypes;
-
     public function __construct(private AuditSearchCriteria $criteria)
     {
-        $tables = AuditEntityCatalog::tables($criteria->entity);
-
         $branches = [];
         $params = [];
-        $types = [];
         $index = 0;
-        foreach ($tables as $entityName => $table) {
-            [$branchSql, $branchParams, $branchTypes] = self::branch($table, $entityName, $criteria, $index);
+        foreach (AuditEntityCatalog::tables($criteria->entity) as $entityName => $table) {
+            [$branchSql, $branchParams] = self::buildBranch($table, $entityName, $criteria, $index);
             $branches[] = $branchSql;
             $params += $branchParams;
-            $types += $branchTypes;
             ++$index;
         }
 
         $this->unionSql = implode(' UNION ALL ', $branches);
         $this->unionParams = $params;
-        $this->unionTypes = $types;
     }
 
     public function selectSql(): string
@@ -84,26 +76,16 @@ final readonly class AuditUnionQuery
     public function selectTypes(): array
     {
         return [
-            ...$this->unionTypes,
             'audit_limit' => ParameterType::INTEGER,
             'audit_offset' => ParameterType::INTEGER,
         ];
     }
 
-    /** @return array<string, ParameterType> */
-    public function countTypes(): array
-    {
-        return $this->unionTypes;
-    }
-
-    /**
-     * @return array{0: string, 1: array<string, mixed>, 2: array<string, ParameterType>}
-     */
-    private static function branch(string $table, string $entityName, AuditSearchCriteria $criteria, int $index): array
+    /** @return array{0: string, 1: array<string, mixed>} */
+    private static function buildBranch(string $table, string $entityName, AuditSearchCriteria $criteria, int $index): array
     {
         $conditions = [];
         $params = ['entity_type_'.$index => $entityName];
-        $types = [];
 
         if (null !== $criteria->action) {
             $conditions[] = 'type = :action_'.$index;
@@ -130,6 +112,6 @@ final readonly class AuditUnionQuery
         $columns = implode(', ', self::COLUMNS);
         $sql = "SELECT {$columns}, :entity_type_{$index} AS entity_type FROM {$table}{$where}";
 
-        return [$sql, $params, $types];
+        return [$sql, $params];
     }
 }

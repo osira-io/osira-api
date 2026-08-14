@@ -20,7 +20,7 @@ final class AuditUnionQueryTest extends TestCase
     {
         $query = new AuditUnionQuery(self::criteria());
 
-        // 7 audited entities joined by UNION ALL -> 6 occurrences, one SELECT per allow-listed table.
+        // 7 allow-listed tables joined pairwise -> 6 UNION ALL occurrences.
         self::assertSame(6, substr_count($query->selectSql(), 'UNION ALL'));
         foreach (['audit_users', 'audit_roles', 'audit_permissions', 'audit_nodes', 'audit_node_groups', 'audit_agents', 'audit_enrollment_tokens'] as $table) {
             self::assertStringContainsString('FROM '.$table, $query->selectSql());
@@ -47,8 +47,7 @@ final class AuditUnionQueryTest extends TestCase
     {
         $query = new AuditUnionQuery(self::criteria(page: 4, itemsPerPage: 20));
 
-        // The old strategy fetched page x itemsPerPage (=80) rows from every table. The SQL
-        // reader must ask PostgreSQL for exactly one page: LIMIT itemsPerPage OFFSET (page-1)*itemsPerPage.
+        // The old strategy fetched page x itemsPerPage (80) rows per table; the guard is LIMIT=itemsPerPage.
         self::assertSame(20, $query->selectParams()['audit_limit']);
         self::assertSame(60, $query->selectParams()['audit_offset']);
         self::assertSame(ParameterType::INTEGER, $query->selectTypes()['audit_limit']);

@@ -57,12 +57,12 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $token = $this->login($client, $this->createAdmin('interleaved@example.com'));
 
         // 10:00 Node(1) -> 10:01 User(1) -> 10:02 Role(1) -> 10:03 Node(2) -> 10:04 User(2) -> 10:05 Role(2)
-        $this->seed('audit_nodes', 1, 'insert', 'node-a', '2024-01-01 10:00:00');
-        $this->seed('audit_users', 1, 'insert', 'user-a', '2024-01-01 10:01:00');
-        $this->seed('audit_roles', 1, 'insert', 'role-a', '2024-01-01 10:02:00');
-        $this->seed('audit_nodes', 2, 'update', 'node-a', '2024-01-01 10:03:00');
-        $this->seed('audit_users', 2, 'update', 'user-a', '2024-01-01 10:04:00');
-        $this->seed('audit_roles', 2, 'update', 'role-a', '2024-01-01 10:05:00');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'node-a', '2024-01-01 10:00:00');
+        $this->seedAuditRow('audit_users', 1, 'insert', 'user-a', '2024-01-01 10:01:00');
+        $this->seedAuditRow('audit_roles', 1, 'insert', 'role-a', '2024-01-01 10:02:00');
+        $this->seedAuditRow('audit_nodes', 2, 'update', 'node-a', '2024-01-01 10:03:00');
+        $this->seedAuditRow('audit_users', 2, 'update', 'user-a', '2024-01-01 10:04:00');
+        $this->seedAuditRow('audit_roles', 2, 'update', 'role-a', '2024-01-01 10:05:00');
 
         $payload = $this->fetchAudits($client, $token, 'itemsPerPage=100&'.self::dateWindow('2024-01-01T00:00:00+00:00', '2024-01-01T23:59:59+00:00'));
         $entities = array_column($payload['items'], 'entity');
@@ -78,13 +78,13 @@ final class AuditSqlPaginationTest extends ApiTestCase
 
         // Same timestamp, same per-table id (1) on two different tables:
         // tie-break falls through to entity name ascending -> Node before User.
-        $this->seed('audit_nodes', 1, 'insert', 'tie-a', '2024-02-01 09:00:00');
-        $this->seed('audit_users', 1, 'insert', 'tie-b', '2024-02-01 09:00:00');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'tie-a', '2024-02-01 09:00:00');
+        $this->seedAuditRow('audit_users', 1, 'insert', 'tie-b', '2024-02-01 09:00:00');
 
         // Same timestamp, different ids on two different tables:
         // tie-break by id DESC must win over entity name ordering (Agent id=20 before Node id=10).
-        $this->seed('audit_agents', 20, 'insert', 'tie-c', '2024-02-01 09:01:00');
-        $this->seed('audit_nodes', 10, 'insert', 'tie-d', '2024-02-01 09:01:00');
+        $this->seedAuditRow('audit_agents', 20, 'insert', 'tie-c', '2024-02-01 09:01:00');
+        $this->seedAuditRow('audit_nodes', 10, 'insert', 'tie-d', '2024-02-01 09:01:00');
 
         $payload = $this->fetchAudits($client, $token, 'itemsPerPage=100&'.self::dateWindow('2024-02-01T00:00:00+00:00', '2024-02-01T23:59:59+00:00'));
         $rows = array_map(
@@ -106,7 +106,7 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $token = $this->login($client, $this->createAdmin('pages@example.com'));
 
         for ($i = 1; $i <= 5; ++$i) {
-            $this->seed('audit_nodes', $i, 'insert', 'node-'.$i, \sprintf('2024-03-01 10:%02d:00', $i));
+            $this->seedAuditRow('audit_nodes', $i, 'insert', 'node-'.$i, \sprintf('2024-03-01 10:%02d:00', $i));
         }
 
         $window = self::dateWindow('2024-03-01T00:00:00+00:00', '2024-03-01T23:59:59+00:00');
@@ -134,9 +134,9 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('entityfilter@example.com'));
 
-        $this->seed('audit_nodes', 1, 'insert', 'n1', '2024-04-01 10:00:00');
-        $this->seed('audit_users', 1, 'insert', 'u1', '2024-04-01 10:01:00');
-        $this->seed('audit_roles', 1, 'insert', 'r1', '2024-04-01 10:02:00');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'n1', '2024-04-01 10:00:00');
+        $this->seedAuditRow('audit_users', 1, 'insert', 'u1', '2024-04-01 10:01:00');
+        $this->seedAuditRow('audit_roles', 1, 'insert', 'r1', '2024-04-01 10:02:00');
 
         $payload = $this->fetchAudits($client, $token, 'entity=Node&itemsPerPage=100');
 
@@ -149,9 +149,9 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('entityid@example.com'));
 
-        $this->seed('audit_nodes', 1, 'insert', 'node-x', '2024-05-01 10:00:00');
-        $this->seed('audit_nodes', 2, 'update', 'node-x', '2024-05-01 10:01:00');
-        $this->seed('audit_nodes', 3, 'insert', 'node-y', '2024-05-01 10:02:00');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'node-x', '2024-05-01 10:00:00');
+        $this->seedAuditRow('audit_nodes', 2, 'update', 'node-x', '2024-05-01 10:01:00');
+        $this->seedAuditRow('audit_nodes', 3, 'insert', 'node-y', '2024-05-01 10:02:00');
 
         $payload = $this->fetchAudits($client, $token, 'entityId=node-x&itemsPerPage=100');
 
@@ -166,9 +166,9 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('action@example.com'));
 
-        $this->seed('audit_nodes', 1, 'insert', 'n1', '2024-06-01 10:00:00');
-        $this->seed('audit_nodes', 2, 'update', 'n1', '2024-06-01 10:01:00');
-        $this->seed('audit_nodes', 3, 'remove', 'n1', '2024-06-01 10:02:00');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'n1', '2024-06-01 10:00:00');
+        $this->seedAuditRow('audit_nodes', 2, 'update', 'n1', '2024-06-01 10:01:00');
+        $this->seedAuditRow('audit_nodes', 3, 'remove', 'n1', '2024-06-01 10:02:00');
 
         $payload = $this->fetchAudits($client, $token, 'action=update&itemsPerPage=100');
 
@@ -181,8 +181,8 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('actor@example.com'));
 
-        $this->seed('audit_nodes', 1, 'insert', 'n1', '2024-07-01 10:00:00', blameId: 'actor-a');
-        $this->seed('audit_nodes', 2, 'insert', 'n2', '2024-07-01 10:01:00', blameId: 'actor-b');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'n1', '2024-07-01 10:00:00', blameId: 'actor-a');
+        $this->seedAuditRow('audit_nodes', 2, 'insert', 'n2', '2024-07-01 10:01:00', blameId: 'actor-b');
 
         $payload = $this->fetchAudits($client, $token, 'actor=actor-a&itemsPerPage=100');
 
@@ -197,10 +197,10 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('dates@example.com'));
 
-        $this->seed('audit_nodes', 1, 'insert', 'n1', '2024-08-01 09:59:59');
-        $this->seed('audit_nodes', 2, 'insert', 'n2', '2024-08-01 10:00:00');
-        $this->seed('audit_nodes', 3, 'insert', 'n3', '2024-08-01 11:00:00');
-        $this->seed('audit_nodes', 4, 'insert', 'n4', '2024-08-01 11:00:01');
+        $this->seedAuditRow('audit_nodes', 1, 'insert', 'n1', '2024-08-01 09:59:59');
+        $this->seedAuditRow('audit_nodes', 2, 'insert', 'n2', '2024-08-01 10:00:00');
+        $this->seedAuditRow('audit_nodes', 3, 'insert', 'n3', '2024-08-01 11:00:00');
+        $this->seedAuditRow('audit_nodes', 4, 'insert', 'n4', '2024-08-01 11:00:01');
 
         $payload = $this->fetchAudits(
             $client,
@@ -216,11 +216,11 @@ final class AuditSqlPaginationTest extends ApiTestCase
         $client = self::createJsonClient();
         $token = $this->login($client, $this->createAdmin('combined@example.com'));
 
-        $this->seed('audit_nodes', 1, 'update', 'match', '2024-09-01 10:00:00', blameId: 'actor-a');
-        $this->seed('audit_nodes', 2, 'insert', 'match', '2024-09-01 10:01:00', blameId: 'actor-a');
-        $this->seed('audit_nodes', 3, 'update', 'other', '2024-09-01 10:02:00', blameId: 'actor-b');
-        $this->seed('audit_nodes', 4, 'update', 'match', '2024-09-01 10:03:00', blameId: 'actor-b');
-        $this->seed('audit_users', 5, 'update', 'match', '2024-09-01 10:04:00', blameId: 'actor-a');
+        $this->seedAuditRow('audit_nodes', 1, 'update', 'match', '2024-09-01 10:00:00', blameId: 'actor-a');
+        $this->seedAuditRow('audit_nodes', 2, 'insert', 'match', '2024-09-01 10:01:00', blameId: 'actor-a');
+        $this->seedAuditRow('audit_nodes', 3, 'update', 'other', '2024-09-01 10:02:00', blameId: 'actor-b');
+        $this->seedAuditRow('audit_nodes', 4, 'update', 'match', '2024-09-01 10:03:00', blameId: 'actor-b');
+        $this->seedAuditRow('audit_users', 5, 'update', 'match', '2024-09-01 10:04:00', blameId: 'actor-a');
 
         $payload = $this->fetchAudits($client, $token, 'entity=Node&action=update&actor=actor-a&itemsPerPage=100');
 
@@ -267,7 +267,7 @@ final class AuditSqlPaginationTest extends ApiTestCase
         return ['items' => $typedItems, 'metadata' => $typedMetadata];
     }
 
-    private function seed(
+    private function seedAuditRow(
         string $table,
         int $id,
         string $type,

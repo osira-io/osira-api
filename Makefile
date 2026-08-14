@@ -8,12 +8,15 @@ PHP ?= php
 COMPOSER ?= composer
 DOCKER ?= docker
 HTTP_PORT ?= 8000
+POSTGRES_USER ?= osira
+POSTGRES_PASSWORD ?= !ChangeMe!
+POSTGRES_TEST_DB ?= osira_test
 
 COMPOSE := $(DOCKER) compose
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test coverage security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
+.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test coverage security grumphp workflow-lint hooks database-up database-down database-test-up test-postgres migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -94,6 +97,12 @@ database-up: ## Start PostgreSQL and wait until it is healthy.
 
 database-down: ## Stop the local PostgreSQL container without deleting its data.
 	$(DOCKER) compose stop database
+
+database-test-up: database-up ## Create the dedicated PostgreSQL database used by Postgres-only tests (idempotent).
+	$(COMPOSE) exec -T database psql -U $(POSTGRES_USER) -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$(POSTGRES_TEST_DB)'" | grep -q 1 || $(COMPOSE) exec -T database psql -U $(POSTGRES_USER) -d postgres -c "CREATE DATABASE $(POSTGRES_TEST_DB)"
+
+test-postgres: database-test-up ## Run PHPUnit against real PostgreSQL 16, required for the Audit UNION ALL tests; pass options with ARGS="...".
+	$(COMPOSE) run --rm --build -e APP_ENV=test -e DATABASE_TEST_URL="postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@database:5432/$(POSTGRES_TEST_DB)?serverVersion=16&charset=utf8" app vendor/bin/phpunit $(ARGS)
 
 migrate: ## Apply Doctrine migrations to the configured database.
 	$(COMPOSE) run --rm --build app php bin/console doctrine:migrations:migrate --no-interaction

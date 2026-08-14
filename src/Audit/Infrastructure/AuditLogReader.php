@@ -30,7 +30,7 @@ final readonly class AuditLogReader
     {
         $query = new AuditUnionQuery($criteria);
 
-        $totalItemsValue = $this->connection->fetchOne($query->countSql(), $query->countParams(), $query->countTypes());
+        $totalItemsValue = $this->connection->fetchOne($query->countSql(), $query->countParams());
         \assert(\is_int($totalItemsValue) || \is_string($totalItemsValue));
         $totalItems = (int) $totalItemsValue;
         $rows = $this->connection->fetchAllAssociative($query->selectSql(), $query->selectParams(), $query->selectTypes());
