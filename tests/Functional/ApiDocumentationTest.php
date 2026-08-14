@@ -51,6 +51,7 @@ final class ApiDocumentationTest extends ApiTestCase
         $roleItemPath = self::objectAt($paths, '/api/roles/{id}');
         $permissionCollectionPath = self::objectAt($paths, '/api/permissions');
         $permissionItemPath = self::objectAt($paths, '/api/permissions/{id}');
+        $currentUserPath = self::objectAt($paths, '/api/me');
 
         self::assertArrayHasKey('patch', $nodePath);
         self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
@@ -71,6 +72,8 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $permissionCollectionPath);
         self::assertArrayNotHasKey('post', $permissionCollectionPath);
         self::assertArrayHasKey('get', $permissionItemPath);
+        self::assertArrayHasKey('get', $currentUserPath);
+        self::assertArrayHasKey('patch', $currentUserPath);
 
         $components = self::objectAt($document, 'components');
         $schemas = self::objectAt($components, 'schemas');
@@ -81,6 +84,12 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringContainsString('groups', $encoded);
         self::assertArrayHasKey('NodeCollection', $schemas);
         self::assertArrayHasKey('NodeGroupCollection', $schemas);
+        self::assertArrayHasKey('CurrentUser', $schemas);
+        $currentUserPatch = json_encode(self::objectAt($schemas, 'CurrentUser.UpdateCurrentUserInput.jsonMergePatch'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('locale', $currentUserPatch);
+        self::assertStringNotContainsString('email', $currentUserPatch);
+        self::assertStringNotContainsString('roles', $currentUserPatch);
+        self::assertStringNotContainsString('permissions', $currentUserPatch);
         self::assertStringNotContainsString('hostname', $encoded);
         self::assertStringNotContainsString('architecture', $encoded);
         self::assertStringNotContainsString('secretHash', json_encode($document, \JSON_THROW_ON_ERROR));

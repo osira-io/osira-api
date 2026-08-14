@@ -19,14 +19,36 @@ final class PermissionChecker implements ResetInterface
 
     public function isGranted(User $user, string $permission): bool
     {
-        $id = (string) $user->id();
-        $authorization = $this->cache[$id] ??= $this->users->authorizationData($user);
+        $authorization = $this->authorization($user);
 
         return $authorization['isSuperAdmin'] || \in_array($permission, $authorization['permissions'], true);
+    }
+
+    /** @return list<string> */
+    public function effectivePermissions(User $user): array
+    {
+        return $this->authorization($user)['permissions'];
     }
 
     public function reset(): void
     {
         $this->cache = [];
+    }
+
+    /** @return array{isSuperAdmin: bool, permissions: list<string>} */
+    private function authorization(User $user): array
+    {
+        $id = (string) $user->id();
+        if (isset($this->cache[$id])) {
+            return $this->cache[$id];
+        }
+
+        $authorization = $this->users->authorizationData($user);
+        if ($authorization['isSuperAdmin']) {
+            $authorization['permissions'] = array_keys(PermissionCode::catalog());
+        }
+        sort($authorization['permissions'], \SORT_STRING);
+
+        return $this->cache[$id] = $authorization;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Internationalization\SupportedLocale;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -33,6 +34,9 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** @var list<string> */
     #[ORM\Column(name: 'roles', type: Types::JSON)]
     private array $technicalRoles;
+
+    #[ORM\Column(length: 10, options: ['default' => SupportedLocale::EN])]
+    private string $locale = SupportedLocale::EN;
 
     /** @var Collection<int, Role> */
     #[ORM\ManyToMany(targetEntity: Role::class)]
@@ -119,6 +123,17 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPasswordHash(string $passwordHash, \DateTimeImmutable $updatedAt): void
     {
         $this->password = $passwordHash;
+        $this->updatedAt = $updatedAt;
+    }
+
+    public function locale(): string
+    {
+        return $this->locale;
+    }
+
+    public function updateLocale(string $locale, \DateTimeImmutable $updatedAt): void
+    {
+        $this->locale = SupportedLocale::normalize($locale);
         $this->updatedAt = $updatedAt;
     }
 
