@@ -35,6 +35,7 @@
     },
     "require-dev": {
         "ext-pdo_sqlite": "*",
+        "doctrine/doctrine-fixtures-bundle": "^4.3",
         "ergebnis/composer-normalize": "^2.52",
         "friendsofphp/php-cs-fixer": "^3.95.18",
         "php-parallel-lint/php-parallel-lint": "^1.4",
