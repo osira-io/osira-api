@@ -55,6 +55,35 @@ from Git hooks. Commit messages must follow Conventional Commits, such as
 If a test suite is present for the area you change, run it and include the
 command and result in your pull request.
 
+## Test-driven development
+
+`src/` is organized feature-first (`src/<Feature>/Domain`, `Application`,
+`Infrastructure`, `Presentation`), and new behavior should be developed
+test-first using a Red → Green → Refactor loop:
+
+1. **Red** — write a failing test that expresses the desired behavior before
+   writing the implementation. Prefer the narrowest test type that can
+   express the behavior:
+   - `tests/Unit/<Feature>/...` for pure logic with no framework/DB/HTTP
+     dependency (e.g. a domain service tested against mocked or in-memory
+     collaborators).
+   - `tests/Integration/<Feature>/...` for behavior that needs the DI
+     container and/or database but not a full HTTP request (e.g. a
+     repository query, a Doctrine listener).
+   - `tests/Functional/<Feature>/...` for behavior only observable through
+     the HTTP API or a console command end-to-end.
+2. **Green** — write the minimum implementation code needed to make the test
+   pass.
+3. **Refactor** — clean up the implementation and/or the test without
+   changing observable behavior, keeping the suite green throughout.
+
+This repository's existing test suite predates this convention and consists
+entirely of functional-style tests under `tests/Functional/`. It has not been
+retroactively split into Unit/Integration tiers, since a test should live in
+the category it genuinely belongs to, not the category that fills out a
+target layout. `tests/Unit/` and `tests/Integration/` will be created
+organically as the corresponding test types are introduced.
+
 ## Commits and pull requests
 
 Write clear, imperative commit messages. A pull request should explain the

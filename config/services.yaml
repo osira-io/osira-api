@@ -20,11 +20,11 @@ services:
     App\:
         resource: '../src/'
 
-    App\Application\Enrollment\EnrollmentTokenIssuer:
+    App\Enrollment\Application\Service\EnrollmentTokenIssuer:
         arguments:
             $ttlSeconds: '%osira.enrollment_token_ttl%'
 
-    App\Security\TokenHasher:
+    App\Auth\Infrastructure\Security\TokenHasher:
         arguments:
             $pepper: '%kernel.secret%'
 

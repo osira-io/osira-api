@@ -14,12 +14,42 @@ doctrine:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
-            App:
+            User:
                 type: attribute
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
+                dir: '%kernel.project_dir%/src/User/Domain/Entity'
+                prefix: 'App\User\Domain\Entity'
+                alias: User
+            Rbac:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Rbac/Domain/Entity'
+                prefix: 'App\Rbac\Domain\Entity'
+                alias: Rbac
+            Node:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Node/Domain/Entity'
+                prefix: 'App\Node\Domain\Entity'
+                alias: Node
+            NodeGroup:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/NodeGroup/Domain/Entity'
+                prefix: 'App\NodeGroup\Domain\Entity'
+                alias: NodeGroup
+            Enrollment:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Enrollment/Domain/Entity'
+                prefix: 'App\Enrollment\Domain\Entity'
+                alias: Enrollment
+            Agent:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Agent/Domain/Entity'
+                prefix: 'App\Agent\Domain\Entity'
+                alias: Agent
 
 when@test:
     doctrine:
