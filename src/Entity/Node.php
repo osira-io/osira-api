@@ -13,7 +13,9 @@ use Symfony\Bridge\Doctrine\Types\UlidType;
 use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: NodeRepository::class)]
-#[ORM\Table(name: 'node')]
+#[ORM\Table(name: 'nodes')]
+#[ORM\Index(columns: ['hostname'], name: 'idx_nodes_hostname')]
+#[ORM\Index(columns: ['environment'], name: 'idx_nodes_environment')]
 final class Node
 {
     #[ORM\Id]
@@ -24,7 +26,14 @@ final class Node
     private readonly string $hostname;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private readonly ?string $displayName;
+    private ?string $displayName;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $environment = null;
+
+    /** @var list<string> */
+    #[ORM\Column(type: Types::JSON)]
+    private array $tags = [];
 
     #[ORM\Column(length: 64)]
     private readonly string $os;
@@ -42,6 +51,13 @@ final class Node
     #[ORM\OneToMany(targetEntity: Agent::class, mappedBy: 'node', cascade: ['persist'])]
     private Collection $agents;
 
+    /** @var Collection<int, NodeGroup> */
+    #[ORM\ManyToMany(targetEntity: NodeGroup::class)]
+    #[ORM\JoinTable(name: 'node_group_nodes')]
+    #[ORM\JoinColumn(name: 'node_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'node_group_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $groups;
+
     public function __construct(
         string $hostname,
         ?string $displayName,
@@ -58,6 +74,7 @@ final class Node
         $this->firstSeenAt = $firstSeenAt;
         $this->createdAt = $createdAt;
         $this->agents = new ArrayCollection();
+        $this->groups = new ArrayCollection();
     }
 
     public function id(): Ulid
@@ -93,6 +110,40 @@ final class Node
     public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function environment(): ?string
+    {
+        return $this->environment;
+    }
+
+    /** @return list<string> */
+    public function tags(): array
+    {
+        return $this->tags;
+    }
+
+    /** @return Collection<int, NodeGroup> */
+    public function groups(): Collection
+    {
+        return $this->groups;
+    }
+
+    /** @param list<string> $tags */
+    public function updateBusinessProperties(?string $displayName, ?string $environment, array $tags): void
+    {
+        $this->displayName = $displayName;
+        $this->environment = $environment;
+        $this->tags = $tags;
+    }
+
+    /** @param list<NodeGroup> $groups */
+    public function replaceGroups(array $groups): void
+    {
+        $this->groups->clear();
+        foreach ($groups as $group) {
+            $this->groups->add($group);
+        }
     }
 
     public function addAgent(Agent $agent): void

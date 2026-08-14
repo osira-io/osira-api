@@ -11,8 +11,8 @@ use Symfony\Bridge\Doctrine\Types\UlidType;
 use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: EnrollmentTokenRepository::class)]
-#[ORM\Table(name: 'enrollment_token')]
-#[ORM\UniqueConstraint(name: 'uniq_enrollment_token_hash', columns: ['token_hash'])]
+#[ORM\Table(name: 'enrollment_tokens')]
+#[ORM\UniqueConstraint(name: 'uniq_enrollment_tokens_hash', columns: ['token_hash'])]
 final class EnrollmentToken
 {
     #[ORM\Id]

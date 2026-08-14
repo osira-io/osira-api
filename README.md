@@ -103,6 +103,27 @@ never stored and cannot be retrieved later. Nodes can be listed with
 `GET /api/nodes` and read with `GET /api/nodes/{id}`; neither response contains
 credentials.
 
+## Nodes and node groups
+
+A **Node** is the logical machine supervised and administered in Osira. An
+**Agent** is the technical Osira software installation enrolled on that Node;
+users do not create Nodes manually. Once enrollment has created a Node, its
+display name, environment, tags, and group memberships can be managed through
+`PATCH /api/nodes/{id}`.
+
+A **NodeGroup** is a user-managed logical grouping of Nodes. For example:
+
+```text
+Production
+├── web-01
+├── web-02
+└── database-01
+```
+
+Groups are available under `/api/node-groups`. They are intended to support
+shared templates and configuration later; templates and inheritance are not
+implemented yet.
+
 User accounts and JWTs authenticate administrators and operators of the control
 plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.

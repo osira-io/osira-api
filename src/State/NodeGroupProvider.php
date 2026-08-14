@@ -7,19 +7,19 @@ namespace App\State;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
-use App\ApiResource\NodeOutput;
-use App\Entity\Node;
-use App\Repository\NodeRepository;
+use App\ApiResource\NodeGroupOutput;
+use App\Entity\NodeGroup;
+use App\Repository\NodeGroupRepository;
 use Symfony\Component\Uid\Ulid;
 
-/** @implements ProviderInterface<NodeOutput> */
-final readonly class NodeProvider implements ProviderInterface
+/** @implements ProviderInterface<NodeGroupOutput> */
+final readonly class NodeGroupProvider implements ProviderInterface
 {
-    public function __construct(private NodeRepository $repository, private NodeOutputFactory $outputFactory)
+    public function __construct(private NodeGroupRepository $repository, private NodeGroupOutputFactory $outputFactory)
     {
     }
 
-    /** @return NodeOutput|list<NodeOutput>|null */
+    /** @return NodeGroupOutput|list<NodeGroupOutput>|null */
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
         if ($operation instanceof GetCollection) {
@@ -30,9 +30,8 @@ final readonly class NodeProvider implements ProviderInterface
         if (!\is_string($id) || !Ulid::isValid($id)) {
             return null;
         }
+        $group = $this->repository->find(new Ulid($id));
 
-        $node = $this->repository->find(new Ulid($id));
-
-        return $node instanceof Node ? $this->outputFactory->create($node) : null;
+        return $group instanceof NodeGroup ? $this->outputFactory->create($group) : null;
     }
 }

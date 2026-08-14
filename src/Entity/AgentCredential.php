@@ -10,8 +10,8 @@ use Symfony\Bridge\Doctrine\Types\UlidType;
 use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'agent_credential')]
-#[ORM\Index(columns: ['agent_id'], name: 'idx_agent_credential_agent')]
+#[ORM\Table(name: 'agent_credentials')]
+#[ORM\Index(columns: ['agent_id'], name: 'idx_agent_credentials_agent')]
 final class AgentCredential
 {
     #[ORM\Id]
