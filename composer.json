@@ -52,6 +52,9 @@
         "symfony/polyfill-php84": "*"
     },
     "conflict": {
+        "amphp/dns": "<2.4.0",
+        "amphp/socket": "<2.4.0",
+        "symfony/doctrine-bridge": "<8.1.4",
         "symfony/symfony": "*"
     },
     "suggest": {

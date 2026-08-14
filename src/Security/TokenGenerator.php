@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use Random\Randomizer;
+
 final readonly class TokenGenerator
 {
     public const string AGENT_PREFIX = 'osi_agent_';
@@ -21,7 +23,7 @@ final readonly class TokenGenerator
 
     private function generate(string $prefix): string
     {
-        $entropy = random_bytes(32);
+        $entropy = new Randomizer()->getBytes(32);
         $encoded = rtrim(strtr(base64_encode($entropy), '+/', '-_'), '=');
 
         return $prefix.$encoded;
