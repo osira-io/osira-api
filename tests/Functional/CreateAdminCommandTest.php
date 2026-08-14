@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\Role;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Security\SystemRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -23,7 +25,7 @@ final class CreateAdminCommandTest extends KernelTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $metadata = $entityManager->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($entityManager);
-        $schemaTool->dropSchema($metadata);
+        $schemaTool->dropDatabase();
         $schemaTool->createSchema($metadata);
     }
 
@@ -47,8 +49,8 @@ final class CreateAdminCommandTest extends KernelTestCase
             $repository = self::getContainer()->get(UserRepository::class);
             $user = $repository->findOneByEmail('admin@example.com');
             self::assertInstanceOf(User::class, $user);
-            self::assertContains('ROLE_ADMIN', $user->getRoles());
             self::assertContains('ROLE_USER', $user->getRoles());
+            self::assertSame([SystemRole::SUPER_ADMIN], array_map(static fn (Role $role): string => $role->slug(), $user->businessRoles()->toArray()));
             self::assertNotSame('correct horse battery staple', $user->getPassword());
 
             $duplicateTester = $this->commandTester();

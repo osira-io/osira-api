@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\QueryParameter;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
+use App\Security\PermissionCode;
 use App\State\NodeGroupCollectionProvider;
 use App\State\PaginationParameters;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -32,6 +33,7 @@ use Symfony\Component\Validator\Constraints as Assert;
                 ),
             ],
             strictQueryParameterValidation: true,
+            security: "is_granted('".PermissionCode::NODE_GROUPS_READ."')",
             provider: NodeGroupCollectionProvider::class,
             openapi: new OpenApiOperation(
                 tags: ['NodeGroup'],

@@ -8,6 +8,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\Node;
 use App\Entity\User;
+use App\Security\SystemRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +17,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final class NodeManagementTest extends ApiTestCase
 {
+    use RbacTestTrait;
+
     private const string PASSWORD = 'correct horse battery staple';
 
     protected static ?bool $alwaysBootKernel = true;
@@ -27,8 +30,9 @@ final class NodeManagementTest extends ApiTestCase
         $entityManager = $this->entityManager();
         $metadata = $entityManager->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($entityManager);
-        $schemaTool->dropSchema($metadata);
+        $schemaTool->dropDatabase();
         $schemaTool->createSchema($metadata);
+        $this->initializeRbac();
         self::ensureKernelShutdown();
     }
 
@@ -219,6 +223,7 @@ final class NodeManagementTest extends ApiTestCase
     {
         $now = new \DateTimeImmutable();
         $user = new User('operator@example.com', ['ROLE_USER'], $now);
+        $this->assignSystemRole($user, SystemRole::OPERATOR);
         $hasher = self::getContainer()->get(UserPasswordHasherInterface::class);
         $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD), $now);
         $entityManager = $this->entityManager();

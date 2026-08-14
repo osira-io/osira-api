@@ -7,6 +7,7 @@ namespace App\Tests\Functional;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\User;
+use App\Security\SystemRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,6 +15,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AuthenticationTest extends ApiTestCase
 {
+    use RbacTestTrait;
+
     protected static ?bool $alwaysBootKernel = true;
 
     protected function setUp(): void
@@ -24,8 +27,9 @@ final class AuthenticationTest extends ApiTestCase
         $entityManager = $this->entityManager();
         $metadata = $entityManager->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($entityManager);
-        $schemaTool->dropSchema($metadata);
+        $schemaTool->dropDatabase();
         $schemaTool->createSchema($metadata);
+        $this->initializeRbac();
 
         self::ensureKernelShutdown();
     }
@@ -101,6 +105,7 @@ final class AuthenticationTest extends ApiTestCase
     {
         $now = new \DateTimeImmutable();
         $user = new User('admin@example.com', $roles, $now);
+        $this->assignSystemRole($user, \in_array('ROLE_ADMIN', $roles, true) ? SystemRole::SUPER_ADMIN : SystemRole::VIEWER);
         $hasher = self::getContainer()->get(UserPasswordHasherInterface::class);
         $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD), $now);
         $entityManager = $this->entityManager();

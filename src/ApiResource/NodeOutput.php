@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Dto\UpdateNodeInput;
+use App\Security\PermissionCode;
 use App\State\NodeProvider;
 use App\State\UpdateNodeProcessor;
 
@@ -19,12 +20,14 @@ use App\State\UpdateNodeProcessor;
         new Get(
             uriTemplate: '/nodes/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            security: "is_granted('".PermissionCode::NODES_READ."')",
             provider: NodeProvider::class,
             openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
         new Patch(
             uriTemplate: '/nodes/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            security: "is_granted('".PermissionCode::NODES_UPDATE."')",
             input: UpdateNodeInput::class,
             output: self::class,
             read: false,

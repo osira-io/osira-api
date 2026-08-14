@@ -13,6 +13,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Dto\CreateNodeGroupInput;
 use App\Dto\UpdateNodeGroupInput;
+use App\Security\PermissionCode;
 use App\State\CreateNodeGroupProcessor;
 use App\State\DeleteNodeGroupProcessor;
 use App\State\NodeGroupProvider;
@@ -25,12 +26,14 @@ use Symfony\Component\HttpFoundation\Response;
         new Get(
             uriTemplate: '/node-groups/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            security: "is_granted('".PermissionCode::NODE_GROUPS_READ."')",
             provider: NodeGroupProvider::class,
             openapi: new OpenApiOperation(security: [['JWT' => []]]),
         ),
         new Post(
             uriTemplate: '/node-groups',
             status: Response::HTTP_CREATED,
+            security: "is_granted('".PermissionCode::NODE_GROUPS_CREATE."')",
             input: CreateNodeGroupInput::class,
             output: self::class,
             read: false,
@@ -40,6 +43,7 @@ use Symfony\Component\HttpFoundation\Response;
         new Patch(
             uriTemplate: '/node-groups/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            security: "is_granted('".PermissionCode::NODE_GROUPS_UPDATE."')",
             input: UpdateNodeGroupInput::class,
             output: self::class,
             read: false,
@@ -49,6 +53,7 @@ use Symfony\Component\HttpFoundation\Response;
         new Delete(
             uriTemplate: '/node-groups/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            security: "is_granted('".PermissionCode::NODE_GROUPS_DELETE."')",
             read: false,
             processor: DeleteNodeGroupProcessor::class,
             openapi: new OpenApiOperation(security: [['JWT' => []]]),

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UlidType;
@@ -21,16 +23,23 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: UlidType::NAME, unique: true)]
     private readonly Ulid $id;
 
-    #[ORM\Column(length: 180)]
     /** @var non-empty-string */
-    private readonly string $email;
+    #[ORM\Column(length: 180)]
+    private string $email;
 
     #[ORM\Column]
     private string $password;
 
     /** @var list<string> */
-    #[ORM\Column(type: Types::JSON)]
-    private array $roles;
+    #[ORM\Column(name: 'roles', type: Types::JSON)]
+    private array $technicalRoles;
+
+    /** @var Collection<int, Role> */
+    #[ORM\ManyToMany(targetEntity: Role::class)]
+    #[ORM\JoinTable(name: 'user_roles')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'role_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $businessRoles;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private readonly \DateTimeImmutable $createdAt;
@@ -44,7 +53,8 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->id = new Ulid();
         $this->email = self::normalizeEmail($email);
         $this->password = '';
-        $this->roles = array_values(array_unique([...$roles, 'ROLE_USER']));
+        $this->technicalRoles = array_values(array_unique([...$roles, 'ROLE_USER']));
+        $this->businessRoles = new ArrayCollection();
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -65,6 +75,7 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    /** @return non-empty-string */
     public function getUserIdentifier(): string
     {
         return $this->email;
@@ -78,7 +89,31 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** @return list<string> */
     public function getRoles(): array
     {
-        return $this->roles;
+        return array_values(array_unique([...$this->technicalRoles, 'ROLE_USER']));
+    }
+
+    /** @return Collection<int, Role> */
+    public function businessRoles(): Collection
+    {
+        return $this->businessRoles;
+    }
+
+    /** @param iterable<Role> $roles */
+    public function replaceBusinessRoles(iterable $roles, \DateTimeImmutable $updatedAt): void
+    {
+        $this->businessRoles->clear();
+        foreach ($roles as $role) {
+            if (!$this->businessRoles->contains($role)) {
+                $this->businessRoles->add($role);
+            }
+        }
+        $this->updatedAt = $updatedAt;
+    }
+
+    public function updateEmail(string $email, \DateTimeImmutable $updatedAt): void
+    {
+        $this->email = self::normalizeEmail($email);
+        $this->updatedAt = $updatedAt;
     }
 
     public function setPasswordHash(string $passwordHash, \DateTimeImmutable $updatedAt): void

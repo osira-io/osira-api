@@ -79,6 +79,57 @@ The returned JWT is valid for one hour. Send it as a Bearer token for protected
 control-plane operations such as `GET /api/nodes` and enrollment-token creation.
 Swagger UI exposes the same Bearer mechanism through its Authorize button.
 
+## Role-based access control
+
+Control-plane authorization is stored in PostgreSQL and follows this model:
+
+```text
+User ── many-to-many ──> Role ── many-to-many ──> Permission
+```
+
+Osira defines the permission catalog. Administrators can compose custom roles
+from those permissions and assign one or more roles to each user. Permissions
+cannot be created, changed, or deleted through the API. The protected Super
+Admin role always bypasses individual permission checks, cannot be deleted, and
+cannot lose its complete permission set. The last user holding that role cannot
+be deleted or have the role removed.
+
+| Category | Permissions |
+| --- | --- |
+| Users | `users.read`, `users.create`, `users.update`, `users.delete` |
+| Access control | `roles.read`, `roles.create`, `roles.update`, `roles.delete`, `permissions.read` |
+| Nodes | `nodes.read`, `nodes.update` |
+| Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
+| Enrollment | `enrollment_tokens.create` |
+
+The initial system roles are:
+
+| Role | Initial permissions |
+| --- | --- |
+| Super Admin | Every permission; protected and non-deletable |
+| Admin | Every permission |
+| Operator | Node read/update and full node-group management |
+| Viewer | `nodes.read` and `node_groups.read` |
+
+All system roles are non-deletable. Admin, Operator, and Viewer permission
+mappings may be adjusted through `PATCH /api/roles/{id}`; running
+`osira:rbac:sync` restores the documented catalog and initial mappings. Super
+Admin permissions cannot be adjusted.
+
+Users use standard REST endpoints at `/api/users` and `/api/users/{id}`. Roles
+use `/api/roles` and `/api/roles/{id}`. The permission catalog is read-only at
+`/api/permissions` and `/api/permissions/{id}`. Collection responses use the
+same `items` and `metadata` pagination envelope as nodes and node groups.
+
+The RBAC migration preserves existing access: users previously carrying
+`ROLE_ADMIN` become Super Admins, while other existing users become Viewers.
+Technical `ROLE_USER` remains only for Symfony authentication; Osira business
+authorization relies exclusively on permission codes.
+
+Future integrations may add explicit idempotent upsert endpoints such as
+`PUT /api/integrations/{source}/users/{externalId}`. No such integration or
+upsert behavior is implemented by the standard REST endpoints today.
+
 ## Agent enrollment
 
 An enrollment token is single-use, expires after 15 minutes by default, and is
