@@ -17,10 +17,10 @@ grumphp:
             no_check_lock: false
         git_blacklist:
             keywords:
-                - "dd\\("
-                - "dump\\("
-                - "var_dump\\("
-                - "die\\("
+                - "\\bdd\\s*\\("
+                - "\\bdump\\s*\\("
+                - "\\bvar_dump\\s*\\("
+                - "\\bdie\\s*\\("
             triggered_by:
                 - php
             regexp_type: E

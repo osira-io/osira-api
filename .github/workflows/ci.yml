@@ -41,6 +41,20 @@ jobs:
         php:
           - "8.4"
           - "8.5"
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: osira_ci
+          POSTGRES_USER: osira
+          POSTGRES_PASSWORD: osira
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username=osira --dbname=osira_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Check out repository
@@ -53,7 +67,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-          extensions: ctype, dom, iconv, json, mbstring, simplexml, tokenizer, xml, xmlwriter
+          extensions: ctype, dom, iconv, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
           ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 
@@ -72,6 +86,24 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Generate ephemeral JWT signing keys
+        env:
+          JWT_PASSPHRASE: osira-ci-passphrase
+        run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
+      - name: Run PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
+        run: php bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Validate PostgreSQL schema
+        env:
+          DATABASE_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
+        run: php bin/console doctrine:schema:validate
+
+      - name: Export OpenAPI document
+        run: php bin/console api:openapi:export --output=var/openapi.json
+
       - name: Validate Composer configuration
         run: make validate
 
@@ -85,6 +117,8 @@ jobs:
         run: make analyse
 
       - name: Run tests
+        env:
+          DATABASE_TEST_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
         run: make test
 
       - name: Audit dependencies
@@ -106,7 +140,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: none
-          extensions: ctype, dom, iconv, json, mbstring, simplexml, tokenizer, xml, xmlwriter
+          extensions: ctype, dom, iconv, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
           ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 

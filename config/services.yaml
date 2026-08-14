@@ -7,6 +7,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    osira.enrollment_token_ttl: 900
 
 services:
     # default configuration for services in *this* file
@@ -19,5 +20,23 @@ services:
     App\:
         resource: '../src/'
 
+    App\Application\Enrollment\EnrollmentTokenIssuer:
+        arguments:
+            $ttlSeconds: '%osira.enrollment_token_ttl%'
+
+    App\Security\TokenHasher:
+        arguments:
+            $pepper: '%kernel.secret%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        logger:
+            class: Symfony\Component\HttpKernel\Log\Logger
+            arguments:
+                $minLevel: debug
+                $output: 'php://memory'
+                $requestStack: '@request_stack'
+                $debug: '%kernel.debug%'
