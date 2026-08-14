@@ -1,7 +1,16 @@
 # Osira API
 
 [![CI](https://github.com/osira-io/osira-api/actions/workflows/ci.yml/badge.svg)](https://github.com/osira-io/osira-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/osira-io/osira-api/branch/develop/graph/badge.svg)](https://codecov.io/gh/osira-io/osira-api)
+[![PHPStan level max](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
+[![PHP 8.4+](https://img.shields.io/badge/PHP-8.4%2B-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
+[![Symfony 8.1](https://img.shields.io/badge/Symfony-8.1-000000.svg?logo=symfony&logoColor=white)](https://symfony.com/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
+Codecov uploads use GitHub OIDC and do not require a repository token. The
+[Codecov GitHub App](https://github.com/apps/codecov) must nevertheless be
+installed for `osira-io/osira-api`, and the repository must be activated in
+Codecov before its first report can be processed.
 
 Osira API is the Symfony and API Platform control plane for an open-source,
 self-hosted monitoring platform. It uses Doctrine ORM and PostgreSQL. A separate
@@ -103,6 +112,45 @@ never stored and cannot be retrieved later. Nodes can be listed with
 `GET /api/nodes` and read with `GET /api/nodes/{id}`; neither response contains
 credentials.
 
+## Nodes and node groups
+
+A **Node** is the logical machine supervised and administered in Osira. An
+**Agent** is the technical Osira software installation enrolled on that Node;
+users do not create Nodes manually. Once enrollment has created a Node, its
+display name, environment, tags, and group memberships can be managed through
+`PATCH /api/nodes/{id}`.
+
+A **NodeGroup** is a user-managed logical grouping of Nodes. For example:
+
+```text
+Production
+├── web-01
+├── web-02
+└── database-01
+```
+
+Groups are available under `/api/node-groups`. They are intended to support
+shared templates and configuration later; templates and inheritance are not
+implemented yet.
+
+Node and node-group collections are paginated with `page` and `itemsPerPage`
+(25 items by default, 100 maximum). Collection responses expose the records in
+`items` and pagination information in `metadata`:
+
+```json
+{
+  "items": [],
+  "metadata": {
+    "currentPage": 1,
+    "itemsPerPage": 25,
+    "totalItems": 0,
+    "totalPages": 0,
+    "hasPreviousPage": false,
+    "hasNextPage": false
+  }
+}
+```
+
 User accounts and JWTs authenticate administrators and operators of the control
 plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
@@ -133,6 +181,7 @@ command.
 | `make cs-fix` | Automatically fix PHP coding-standard violations |
 | `make analyse` | Run PHPStan at the maximum level |
 | `make test` | Run PHPUnit; use `ARGS="--filter Name"` to select tests |
+| `make coverage` | Generate `var/coverage.xml` with PCOV or Xdebug |
 | `make database-up` | Start the local PostgreSQL database |
 | `make migrate` | Apply Doctrine migrations |
 | `make schema-validate` | Validate Doctrine mapping and the database schema |

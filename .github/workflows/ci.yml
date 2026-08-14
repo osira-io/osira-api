@@ -150,6 +150,49 @@ jobs:
       - name: Run quality gate against lowest versions
         run: make qa
 
+  coverage:
+    name: Code coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP with PCOV
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.4"
+          coverage: pcov
+          extensions: ctype, dom, iconv, json, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+          ini-values: memory_limit=-1, error_reporting=E_ALL
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generate ephemeral JWT signing keys
+        env:
+          JWT_PASSPHRASE: osira-ci-passphrase
+        run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
+      - name: Generate Clover coverage report
+        run: composer test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          disable_search: true
+          fail_ci_if_error: false
+          files: var/coverage.xml
+          slug: osira-io/osira-api
+          use_oidc: true
+
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'

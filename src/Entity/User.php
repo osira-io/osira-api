@@ -13,8 +13,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'app_user')]
-#[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
+#[ORM\Table(name: 'users')]
+#[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
 final class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]

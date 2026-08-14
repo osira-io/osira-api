@@ -11,6 +11,7 @@
         "doctrine/doctrine-bundle": "^3.3.1",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6.8",
+        "knplabs/knp-paginator-bundle": "^6.10",
         "lexik/jwt-authentication-bundle": "^3.2",
         "symfony/clock": "~8.1.0",
         "symfony/console": "~8.1.0",
@@ -19,6 +20,7 @@
         "symfony/framework-bundle": "~8.1.0",
         "symfony/runtime": "~8.1.0",
         "symfony/security-bundle": "~8.1.2",
+        "symfony/translation": "~8.1.0",
         "symfony/twig-bundle": "^8.0",
         "symfony/uid": "~8.1.4",
         "symfony/validator": "~8.1.4",
@@ -127,7 +129,8 @@
             "@security"
         ],
         "security": "composer audit --locked --no-interaction",
-        "test": "phpunit"
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-clover=var/coverage.xml"
     },
     "scripts-descriptions": {
         "analyse": "Run strict static analysis with PHPStan.",
@@ -137,6 +140,7 @@
         "lint": "Lint PHP, YAML, and the Symfony service container.",
         "qa": "Run the complete local quality gate.",
         "security": "Check locked dependencies against security advisories.",
-        "test": "Run the PHPUnit test suite."
+        "test": "Run the PHPUnit test suite.",
+        "test:coverage": "Run PHPUnit and generate a Clover coverage report."
     }
 }

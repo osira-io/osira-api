@@ -1,0 +1,7 @@
+knp_paginator:
+    convert_exception: true
+    default_options:
+        page_name: page
+        distinct: true
+        page_out_of_range: fix
+        default_limit: 25

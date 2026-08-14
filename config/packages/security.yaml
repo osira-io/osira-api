@@ -37,6 +37,7 @@ security:
         - { path: ^/api/agents/enroll$, roles: PUBLIC_ACCESS }
         - { path: ^/api/enrollment-tokens$, roles: ROLE_ADMIN }
         - { path: ^/api/nodes(?:/|$), roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/node-groups(?:/|$), roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

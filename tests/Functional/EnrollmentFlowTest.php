@@ -12,11 +12,9 @@ use App\Security\TokenGenerator;
 use App\Security\TokenHasher;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[CoversNothing]
 final class EnrollmentFlowTest extends ApiTestCase
 {
     protected static ?bool $alwaysBootKernel = true;
@@ -53,7 +51,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         self::assertIsString($payload['token']);
         self::assertStringStartsWith(TokenGenerator::ENROLLMENT_PREFIX, $payload['token']);
 
-        $storedHash = $this->entityManager()->getConnection()->fetchOne('SELECT token_hash FROM enrollment_token');
+        $storedHash = $this->entityManager()->getConnection()->fetchOne('SELECT token_hash FROM enrollment_tokens');
         self::assertIsString($storedHash);
         self::assertNotSame($payload['token'], $storedHash);
         self::assertStringNotContainsString($payload['token'], $storedHash);
@@ -80,12 +78,12 @@ final class EnrollmentFlowTest extends ApiTestCase
         self::assertStringStartsWith(TokenGenerator::AGENT_PREFIX, $payload['agentToken']);
 
         $connection = $this->entityManager()->getConnection();
-        self::assertSame(1, $this->countRows('node'));
-        self::assertSame(1, $this->countRows('agent'));
-        self::assertSame(1, $this->countRows('agent_credential'));
-        self::assertNotFalse($connection->fetchOne('SELECT used_at FROM enrollment_token'));
+        self::assertSame(1, $this->countRows('nodes'));
+        self::assertSame(1, $this->countRows('agents'));
+        self::assertSame(1, $this->countRows('agent_credentials'));
+        self::assertNotFalse($connection->fetchOne('SELECT used_at FROM enrollment_tokens'));
 
-        $storedSecretHash = $connection->fetchOne('SELECT secret_hash FROM agent_credential');
+        $storedSecretHash = $connection->fetchOne('SELECT secret_hash FROM agent_credentials');
         self::assertIsString($storedSecretHash);
         self::assertNotSame($payload['agentToken'], $storedSecretHash);
         self::assertStringNotContainsString($payload['agentToken'], $storedSecretHash);
@@ -98,7 +96,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         $this->enroll($client, TokenGenerator::ENROLLMENT_PREFIX.'invalid-token');
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-        self::assertSame(0, $this->countRows('node'));
+        self::assertSame(0, $this->countRows('nodes'));
     }
 
     public function testExpiredEnrollmentTokenIsRejected(): void
@@ -112,7 +110,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         $this->enroll($client, $rawToken);
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-        self::assertSame(0, $this->countRows('node'));
+        self::assertSame(0, $this->countRows('nodes'));
     }
 
     public function testUsedEnrollmentTokenIsRejected(): void
@@ -127,7 +125,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         $this->enroll($client, $rawToken);
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-        self::assertSame(0, $this->countRows('node'));
+        self::assertSame(0, $this->countRows('nodes'));
     }
 
     public function testNodeEndpointsNeverExposeCredentials(): void
