@@ -7,57 +7,45 @@ namespace App\Audit\Infrastructure;
 use App\Audit\Domain\AuditPage;
 use App\Audit\Domain\AuditRecord;
 use App\Audit\Domain\AuditSearchCriteria;
-use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\DateRangeFilter;
-use DH\Auditor\Provider\Doctrine\Persistence\Reader\Query;
-use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+use DH\Auditor\Model\Entry;
+use Doctrine\DBAL\Connection;
 
-/** Osira-facing adapter around the DamienHarper Auditor reader. */
+/**
+ * Osira-facing reader for the DH Auditor storage tables. Filtering, global ordering and
+ * pagination are pushed down to PostgreSQL via a single `UNION ALL` query (plus a matching
+ * `COUNT`), so this class never loads more rows than the requested page.
+ *
+ * @see AuditUnionQuery for the SQL construction.
+ */
 final readonly class AuditLogReader
 {
-    public function __construct(private Reader $reader)
+    /** DH Auditor's own reader uses this timezone (see config/packages/dh_auditor.yaml). */
+    private const string TIMEZONE = 'UTC';
+
+    public function __construct(private Connection $connection)
     {
     }
 
     public function search(AuditSearchCriteria $criteria): AuditPage
     {
-        $records = [];
-        $totalItems = 0;
-        $limitPerEntity = $criteria->page * $criteria->itemsPerPage;
+        $query = new AuditUnionQuery($criteria);
 
-        foreach (AuditEntityCatalog::entities($criteria->entity) as $name => $class) {
-            $query = $this->reader->createQuery($class, [
-                'type' => $criteria->action,
-                'object_id' => $criteria->entityId,
-                'blame_id' => $criteria->actorId,
-                'page_size' => null,
-            ]);
-            if (null !== $criteria->dateFrom || null !== $criteria->dateTo) {
-                $query->addFilter(new DateRangeFilter(Query::CREATED_AT, $criteria->dateFrom, $criteria->dateTo));
-            }
+        $totalItemsValue = $this->connection->fetchOne($query->countSql(), $query->countParams(), $query->countTypes());
+        \assert(\is_int($totalItemsValue) || \is_string($totalItemsValue));
+        $totalItems = (int) $totalItemsValue;
+        $rows = $this->connection->fetchAllAssociative($query->selectSql(), $query->selectParams(), $query->selectTypes());
 
-            $totalItems += $query->count();
-            foreach ($query->limit($limitPerEntity)->execute() as $entry) {
-                $records[] = new AuditRecord($name, $entry);
-            }
-        }
-
-        usort($records, self::compare(...));
-        $offset = ($criteria->page - 1) * $criteria->itemsPerPage;
-
-        return new AuditPage(\array_slice($records, $offset, $criteria->itemsPerPage), $totalItems);
+        return new AuditPage(array_map(self::toRecord(...), $rows), $totalItems);
     }
 
-    private static function compare(AuditRecord $left, AuditRecord $right): int
+    /** @param array<string, mixed> $row */
+    private static function toRecord(array $row): AuditRecord
     {
-        $leftCreatedAt = $left->entry->createdAt?->getTimestamp() ?? 0;
-        $rightCreatedAt = $right->entry->createdAt?->getTimestamp() ?? 0;
-        $byDate = $rightCreatedAt <=> $leftCreatedAt;
-        if (0 !== $byDate) {
-            return $byDate;
-        }
+        $entity = $row['entity_type'];
+        \assert(\is_string($entity));
+        \assert(\is_string($row['created_at']));
+        $row['created_at'] = new \DateTimeImmutable($row['created_at'], new \DateTimeZone(self::TIMEZONE));
 
-        $byId = ($right->entry->id ?? 0) <=> ($left->entry->id ?? 0);
-
-        return 0 !== $byId ? $byId : $left->entity <=> $right->entity;
+        return new AuditRecord($entity, Entry::fromArray($row));
     }
 }
