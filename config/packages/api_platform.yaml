@@ -15,12 +15,7 @@ api_platform:
         html: ['text/html']
     mapping:
         paths:
-            - '%kernel.project_dir%/src/User/Presentation/Api/Resource'
-            - '%kernel.project_dir%/src/Rbac/Presentation/Api/Resource'
-            - '%kernel.project_dir%/src/Node/Presentation/Api/Resource'
-            - '%kernel.project_dir%/src/NodeGroup/Presentation/Api/Resource'
-            - '%kernel.project_dir%/src/Enrollment/Presentation/Api/Resource'
-            - '%kernel.project_dir%/src/Audit/Presentation/Api/Resource'
+            - '%kernel.project_dir%/src/Dto'
     defaults:
         stateless: true
         pagination_client_enabled: false

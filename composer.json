@@ -38,6 +38,7 @@
         "doctrine/doctrine-fixtures-bundle": "^4.3",
         "ergebnis/composer-normalize": "^2.52",
         "friendsofphp/php-cs-fixer": "^3.95.18",
+        "nikic/php-parser": "^5.8.0",
         "php-parallel-lint/php-parallel-lint": "^1.4",
         "phpro/grumphp": "^2.23",
         "phpstan/phpstan": "^2.2.8",
@@ -113,6 +114,7 @@
             "@cache:test",
             "phpstan analyse --memory-limit=512M"
         ],
+        "architecture": "php tools/check-architecture.php",
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
@@ -131,6 +133,7 @@
         "lint:yaml": "bin/console lint:yaml config .github grumphp.yml",
         "qa": [
             "@lint",
+            "@architecture",
             "@cs:check",
             "@analyse",
             "@test",
@@ -142,6 +145,7 @@
     },
     "scripts-descriptions": {
         "analyse": "Run strict static analysis with PHPStan.",
+        "architecture": "Verify src/ follows the Symfony-standard per-domain folder convention.",
         "cs:check": "Check PHP coding standards without modifying files.",
         "cs:fix": "Fix PHP coding standards automatically.",
         "grumphp": "Run the complete GrumPHP CI task suite.",

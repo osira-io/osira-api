@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Support;
 
-use App\Rbac\Application\Service\RbacCatalogSynchronizer;
-use App\Rbac\Domain\Entity\Role;
-use App\Rbac\Infrastructure\Repository\RoleRepository;
-use App\User\Domain\Entity\User;
+use App\Entity\Rbac\Role;
+use App\Entity\User\User;
+use App\Repository\Rbac\RoleRepository;
+use App\Service\Rbac\RbacCatalogSynchronizer;
 
 trait RbacTestTrait
 {

@@ -101,11 +101,22 @@ jobs:
           DATABASE_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
         run: php bin/console doctrine:schema:validate
 
+      - name: Show Doctrine entity mapping
+        env:
+          DATABASE_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
+        run: php bin/console doctrine:mapping:info
+
       - name: Export OpenAPI document
         run: php bin/console api:openapi:export --output=var/openapi.json
 
+      - name: Show routes
+        run: php bin/console debug:router
+
       - name: Validate Composer configuration
         run: make validate
+
+      - name: Check src/ architecture convention
+        run: make architecture
 
       - name: Lint PHP, YAML, and the service container
         run: make lint
@@ -123,6 +134,14 @@ jobs:
 
       - name: Audit dependencies
         run: make security
+
+      - name: Run GrumPHP quality gate
+        env:
+          DATABASE_TEST_URL: postgresql://osira:osira@127.0.0.1:5432/osira_ci?serverVersion=16&charset=utf8
+        run: make grumphp
+
+      - name: Check for diff artifacts (trailing whitespace, conflict markers)
+        run: git diff --check
 
   lowest-dependencies:
     name: Lowest supported dependencies

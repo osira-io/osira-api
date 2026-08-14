@@ -15,6 +15,10 @@ grumphp:
             indent_size: 4
             indent_style: space
             no_check_lock: false
+        composer_script:
+            script: architecture
+            triggered_by:
+                - php
         git_blacklist:
             keywords:
                 - "\\bdd\\s*\\("
@@ -77,6 +81,7 @@ grumphp:
             tasks:
                 - composer
                 - composer_normalize
+                - composer_script
                 - jsonlint
                 - phpcsfixer
                 - phplint
@@ -88,6 +93,7 @@ grumphp:
             tasks:
                 - composer
                 - composer_normalize
+                - composer_script
                 - git_blacklist
                 - git_branch_name
                 - jsonlint

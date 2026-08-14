@@ -1,7 +1,7 @@
 dh_auditor:
     enabled: true
     timezone: UTC
-    user_provider: App\Audit\Infrastructure\AuditUserProvider
+    user_provider: App\Service\Audit\AuditUserProvider
     providers:
         doctrine:
             table_prefix: audit_
@@ -10,16 +10,16 @@ dh_auditor:
                 - createdAt
                 - updatedAt
             entities:
-                App\User\Domain\Entity\User:
+                App\Entity\User\User:
                     ignored_columns:
                         - password
                         - technicalRoles
-                App\Rbac\Domain\Entity\Role: ~
-                App\Rbac\Domain\Entity\Permission: ~
-                App\Node\Domain\Entity\Node: ~
-                App\NodeGroup\Domain\Entity\NodeGroup: ~
-                App\Agent\Domain\Entity\Agent: ~
-                App\Enrollment\Domain\Entity\EnrollmentToken:
+                App\Entity\Rbac\Role: ~
+                App\Entity\Rbac\Permission: ~
+                App\Entity\Node\Node: ~
+                App\Entity\NodeGroup\NodeGroup: ~
+                App\Entity\Agent\Agent: ~
+                App\Entity\Enrollment\EnrollmentToken:
                     ignored_columns:
                         - tokenHash
             storage_services:
