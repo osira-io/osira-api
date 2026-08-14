@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Dto\CreateEnrollmentTokenInput;
+use App\Security\PermissionCode;
 use App\State\CreateEnrollmentTokenProcessor;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
         new Post(
             uriTemplate: '/enrollment-tokens',
             status: Response::HTTP_CREATED,
+            security: "is_granted('".PermissionCode::ENROLLMENT_TOKENS_CREATE."')",
             input: CreateEnrollmentTokenInput::class,
             output: self::class,
             read: false,

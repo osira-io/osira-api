@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Application\Rbac\RbacCatalogSynchronizer;
+use App\Entity\Role;
 use App\Entity\User;
+use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
+use App\Security\SystemRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -28,6 +32,8 @@ final class CreateAdminCommand extends Command
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly ValidatorInterface $validator,
         private readonly ClockInterface $clock,
+        private readonly RbacCatalogSynchronizer $catalogSynchronizer,
+        private readonly RoleRepository $roleRepository,
     ) {
         parent::__construct();
     }
@@ -58,7 +64,16 @@ final class CreateAdminCommand extends Command
         }
 
         $now = $this->clock->now();
-        $user = new User($email, ['ROLE_ADMIN'], $now);
+        $superAdminRole = $this->roleRepository->findOneBy(['slug' => SystemRole::SUPER_ADMIN]);
+        if (!$superAdminRole instanceof Role) {
+            $this->catalogSynchronizer->synchronize();
+            $superAdminRole = $this->roleRepository->findOneBy(['slug' => SystemRole::SUPER_ADMIN]);
+        }
+        if (!$superAdminRole instanceof Role) {
+            throw new \LogicException('The Super Admin system role is unavailable.');
+        }
+        $user = new User($email, ['ROLE_USER'], $now);
+        $user->replaceBusinessRoles([$superAdminRole], $now);
         $user->setPasswordHash($this->passwordHasher->hashPassword($user, $password), $now);
 
         $this->entityManager->persist($user);

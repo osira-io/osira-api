@@ -8,6 +8,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\EnrollmentToken;
 use App\Entity\User;
+use App\Security\SystemRole;
 use App\Security\TokenGenerator;
 use App\Security\TokenHasher;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class EnrollmentFlowTest extends ApiTestCase
 {
+    use RbacTestTrait;
+
     protected static ?bool $alwaysBootKernel = true;
 
     protected function setUp(): void
@@ -28,8 +31,9 @@ final class EnrollmentFlowTest extends ApiTestCase
         $entityManager = $this->entityManager();
         $schemaTool = new SchemaTool($entityManager);
         $metadata = $entityManager->getMetadataFactory()->getAllMetadata();
-        $schemaTool->dropSchema($metadata);
+        $schemaTool->dropDatabase();
         $schemaTool->createSchema($metadata);
+        $this->initializeRbac();
 
         self::ensureKernelShutdown();
     }
@@ -37,8 +41,9 @@ final class EnrollmentFlowTest extends ApiTestCase
     public function testAdministratorCanCreateOneTimeEnrollmentToken(): void
     {
         $client = self::createJsonClient();
+        $jwt = $this->createUserAndLogin($client, ['ROLE_ADMIN']);
         $response = $client->request('POST', '/api/enrollment-tokens', [
-            'auth_bearer' => $this->createUserAndLogin($client, ['ROLE_ADMIN']),
+            'auth_bearer' => $jwt,
             'json' => [],
         ]);
 
@@ -57,7 +62,7 @@ final class EnrollmentFlowTest extends ApiTestCase
         self::assertStringNotContainsString($payload['token'], $storedHash);
 
         self::assertIsString($payload['id']);
-        $client->request('GET', '/api/enrollment_tokens/'.$payload['id']);
+        $client->request('GET', '/api/enrollment_tokens/'.$payload['id'], ['auth_bearer' => $jwt]);
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
@@ -161,6 +166,7 @@ final class EnrollmentFlowTest extends ApiTestCase
     private function createUserAndLogin(Client $client, array $roles): string
     {
         $user = new User('admin@example.com', $roles, new \DateTimeImmutable());
+        $this->assignSystemRole($user, \in_array('ROLE_ADMIN', $roles, true) ? SystemRole::SUPER_ADMIN : SystemRole::VIEWER);
         $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
         $user->setPasswordHash($passwordHasher->hashPassword($user, 'correct horse battery staple'), new \DateTimeImmutable());
         $entityManager = $this->entityManager();
