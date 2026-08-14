@@ -13,7 +13,7 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Tester\CommandTester;
+use Symfony\Component\Console\Tester\ApplicationTester;
 
 final class CreateAdminCommandTest extends KernelTestCase
 {
@@ -36,8 +36,9 @@ final class CreateAdminCommandTest extends KernelTestCase
         file_put_contents($passwordFile, "correct horse battery staple\n", \LOCK_EX);
 
         try {
-            $tester = $this->commandTester();
-            $status = $tester->execute([
+            $tester = $this->applicationTester();
+            $status = $tester->run([
+                'command' => 'osira:user:create-admin',
                 '--email' => 'Admin@Example.com',
                 '--password-file' => $passwordFile,
             ], ['interactive' => false]);
@@ -52,9 +53,20 @@ final class CreateAdminCommandTest extends KernelTestCase
             self::assertContains('ROLE_USER', $user->getRoles());
             self::assertSame([SystemRole::SUPER_ADMIN], array_map(static fn (Role $role): string => $role->slug(), $user->businessRoles()->toArray()));
             self::assertNotSame('correct horse battery staple', $user->getPassword());
+            $audit = self::getContainer()->get(EntityManagerInterface::class)->getConnection()->fetchAssociative(
+                'SELECT blame_id, blame_user, diffs FROM audit_users WHERE object_id = ? AND type = ?',
+                [(string) $user->id(), 'insert'],
+            );
+            self::assertIsArray($audit);
+            self::assertSame('osira:user:create-admin', $audit['blame_id'] ?? null);
+            self::assertSame('osira:user:create-admin', $audit['blame_user'] ?? null);
+            $auditDiffs = $audit['diffs'] ?? null;
+            self::assertIsString($auditDiffs);
+            self::assertStringNotContainsString('password', strtolower($auditDiffs));
 
-            $duplicateTester = $this->commandTester();
-            $duplicateStatus = $duplicateTester->execute([
+            $duplicateTester = $this->applicationTester();
+            $duplicateStatus = $duplicateTester->run([
+                'command' => 'osira:user:create-admin',
                 '--email' => 'admin@example.com',
                 '--password-file' => $passwordFile,
             ], ['interactive' => false]);
@@ -65,12 +77,13 @@ final class CreateAdminCommandTest extends KernelTestCase
         }
     }
 
-    private function commandTester(): CommandTester
+    private function applicationTester(): ApplicationTester
     {
         $kernel = self::$kernel;
         self::assertNotNull($kernel);
         $application = new Application($kernel);
+        $application->setAutoExit(false);
 
-        return new CommandTester($application->find('osira:user:create-admin'));
+        return new ApplicationTester($application);
     }
 }

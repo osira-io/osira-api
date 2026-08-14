@@ -22,6 +22,7 @@ final class PermissionCode
     public const string NODE_GROUPS_UPDATE = 'node_groups.update';
     public const string NODE_GROUPS_DELETE = 'node_groups.delete';
     public const string ENROLLMENT_TOKENS_CREATE = 'enrollment_tokens.create';
+    public const string AUDIT_LOGS_READ = 'audit_logs.read';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -43,6 +44,7 @@ final class PermissionCode
             self::NODE_GROUPS_UPDATE => self::entry('Update node groups', 'Update node groups.', 'Node groups'),
             self::NODE_GROUPS_DELETE => self::entry('Delete node groups', 'Delete node groups.', 'Node groups'),
             self::ENROLLMENT_TOKENS_CREATE => self::entry('Create enrollment tokens', 'Issue one-time agent enrollment tokens.', 'Enrollment'),
+            self::AUDIT_LOGS_READ => self::entry('View audit logs', 'Allows viewing the audit history of Osira resources.', 'Audit'),
         ];
     }
 
