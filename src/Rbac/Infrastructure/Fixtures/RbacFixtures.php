@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Rbac\Infrastructure\Fixtures;
+
+use App\Rbac\Application\Service\RbacCatalogSynchronizer;
+use App\Rbac\Domain\Entity\Permission;
+use App\Rbac\Domain\Entity\Role;
+use App\Rbac\Infrastructure\Repository\PermissionRepository;
+use App\Rbac\Infrastructure\Repository\RoleRepository;
+use App\Rbac\Infrastructure\Security\PermissionCode;
+use DH\Auditor\Auditor;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+/**
+ * Seeds the RBAC catalog for development: the four system roles via the same
+ * {@see RbacCatalogSynchronizer} the app uses at runtime (`osira:rbac:sync`), plus one
+ * custom role — "NOC Operator" — so the frontend can exercise dynamic, non-system roles.
+ */
+final class RbacFixtures extends Fixture
+{
+    public const string NOC_OPERATOR_ROLE_SLUG = 'noc-operator';
+    public const string NOC_OPERATOR_REFERENCE = 'role-noc-operator';
+
+    public function __construct(
+        private readonly RbacCatalogSynchronizer $synchronizer,
+        private readonly PermissionRepository $permissions,
+        private readonly RoleRepository $roles,
+        private readonly Auditor $auditor,
+    ) {
+    }
+
+    public function load(ObjectManager $manager): void
+    {
+        $this->auditor->getConfiguration()->disable();
+
+        $this->synchronizer->synchronize();
+
+        $now = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
+        $permissionCodes = [
+            PermissionCode::NODES_READ,
+            PermissionCode::NODES_UPDATE,
+            PermissionCode::NODE_GROUPS_READ,
+            PermissionCode::AUDIT_LOGS_READ,
+        ];
+        $permissions = array_map(function (string $code): Permission {
+            $permission = $this->permissions->findOneBy(['code' => $code]);
+            \assert($permission instanceof Permission);
+
+            return $permission;
+        }, $permissionCodes);
+
+        $role = $this->roles->findOneBy(['slug' => self::NOC_OPERATOR_ROLE_SLUG]);
+        if (!$role instanceof Role) {
+            $role = new Role(
+                'NOC Operator',
+                self::NOC_OPERATOR_ROLE_SLUG,
+                'Monitors node health and reviews related audit history across the fleet.',
+                false,
+                $now,
+            );
+            $manager->persist($role);
+        }
+        $role->replacePermissions($permissions, $now);
+        $manager->flush();
+
+        $this->addReference(self::NOC_OPERATOR_REFERENCE, $role);
+
+        $this->auditor->getConfiguration()->enable();
+    }
+}

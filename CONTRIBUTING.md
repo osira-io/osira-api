@@ -91,6 +91,62 @@ default run. Use `make test-postgres` for that — it provisions a dedicated
 `osira_test` database and runs PHPUnit against it (`make test-postgres
 ARGS="tests/Functional/Audit"` to scope the run).
 
+## Development fixtures
+
+`make dev` (or `make dev-setup`) brings up a working stack with an empty
+database. To seed it with a realistic, deterministic dataset so a frontend
+(e.g. `osira-web`) has something to build against immediately:
+
+```bash
+make fixtures
+```
+
+To fully reset the local database — drop, recreate, migrate, and reseed — in
+one step:
+
+```bash
+make dev-reset
+```
+
+**`make dev-reset` is DEV ONLY.** It drops the local database. It refuses to
+run unless the app container resolves to the `dev` environment, and it only
+ever talks to the `database` service defined in `compose.yaml` — it has no
+path to a production `DATABASE_URL`. Never adapt it to run against anything
+but a local development database.
+
+Fixtures are organized by feature under `src/<Feature>/Infrastructure/Fixtures/`
+and load in dependency order: RBAC catalog → users → node groups → nodes →
+agents. The RBAC catalog is seeded through the same
+`RbacCatalogSynchronizer` the `osira:rbac:sync` command uses — fixtures do
+not duplicate the permission/role catalog. Auditing is temporarily disabled
+while fixtures load (`DH\Auditor\Auditor::getConfiguration()->disable()`),
+so seeding development data doesn't pollute the audit log.
+
+### DEV accounts
+
+**FOR DEVELOPMENT ONLY. NEVER use these credentials in production.**
+
+| Email | Role |
+| --- | --- |
+| `admin@osira.local` | Super Admin |
+| `admin2@osira.local` | Admin |
+| `operator@osira.local` | Operator |
+| `viewer@osira.local` | Viewer |
+| `noc@osira.local` | NOC Operator (custom role — `nodes.read`, `nodes.update`, `node_groups.read`, `audit_logs.read`) |
+
+Password for all of the above: `Osira123!`
+
+### Dataset
+
+8 node groups (Production, Staging, Linux Servers, Windows Servers,
+Databases, Web Servers, Critical Infrastructure, Homelab) and 12 nodes
+spanning production/staging/office/homelab environments, Linux and Windows,
+with realistic hostnames, tags, and group memberships. The 10 Linux nodes
+each get a descriptive `Agent` record (version `0.1.0-dev`); Windows nodes
+are left agent-less on purpose so the frontend can handle both states. No
+`AgentCredential` or `EnrollmentToken` is created — fixtures never hold a
+usable secret.
+
 ## Commits and pull requests
 
 Write clear, imperative commit messages. A pull request should explain the

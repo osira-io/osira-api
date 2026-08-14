@@ -16,7 +16,7 @@ COMPOSE := $(DOCKER) compose
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test coverage security grumphp workflow-lint hooks database-up database-down database-test-up test-postgres migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
+.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test coverage security grumphp workflow-lint hooks database-up database-down database-test-up vendor-sync test-postgres migrate fixtures dev-reset schema-validate jwt-keys openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -101,11 +101,26 @@ database-down: ## Stop the local PostgreSQL container without deleting its data.
 database-test-up: database-up ## Create the dedicated PostgreSQL database used by Postgres-only tests (idempotent).
 	$(COMPOSE) exec -T database psql -U $(POSTGRES_USER) -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$(POSTGRES_TEST_DB)'" | grep -q 1 || $(COMPOSE) exec -T database psql -U $(POSTGRES_USER) -d postgres -c "CREATE DATABASE $(POSTGRES_TEST_DB)"
 
-test-postgres: database-test-up ## Run PHPUnit against real PostgreSQL 16, required for the Audit UNION ALL tests; pass options with ARGS="...".
-	$(COMPOSE) run --rm --build -e APP_ENV=test -e DATABASE_TEST_URL="postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@database:5432/$(POSTGRES_TEST_DB)?serverVersion=16&charset=utf8" app vendor/bin/phpunit $(ARGS)
+vendor-sync: ## Rebuild the app image and sync its named vendor/ volume with composer.lock. The volume can otherwise shadow a freshly built image's vendor/ with stale dependencies.
+	$(COMPOSE) run --rm --no-deps --build app composer install --prefer-dist --no-interaction --no-progress
+
+test-postgres: vendor-sync database-test-up ## Run PHPUnit against real PostgreSQL 16, required for the Audit UNION ALL tests; pass options with ARGS="...".
+	$(COMPOSE) run --rm -e APP_ENV=test -e DATABASE_TEST_URL="postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@database:5432/$(POSTGRES_TEST_DB)?serverVersion=16&charset=utf8" app vendor/bin/phpunit $(ARGS)
 
 migrate: ## Apply Doctrine migrations to the configured database.
 	$(COMPOSE) run --rm --build app php bin/console doctrine:migrations:migrate --no-interaction
+
+fixtures: vendor-sync database-up ## Load deterministic DEV-only fixtures (RBAC, users, node groups, nodes, agents) into the local database.
+	$(COMPOSE) run --rm app php bin/console doctrine:fixtures:load --no-interaction
+
+dev-reset: vendor-sync database-up ## DEV ONLY: drop, recreate, migrate, and reseed the local development database. Refuses to run unless the app container resolves to the "dev" environment.
+	@echo "This drops and recreates the LOCAL DEVELOPMENT database. It must never be pointed at production."
+	@$(COMPOSE) run --rm --no-deps app php bin/console about | grep -Eq '^\s*Environment\s+dev\s*$$' \
+		|| (echo "Refusing to run: the app container did not resolve to the 'dev' environment." >&2 && exit 1)
+	$(COMPOSE) run --rm app php bin/console doctrine:database:drop --force --if-exists
+	$(COMPOSE) run --rm app php bin/console doctrine:database:create --if-not-exists
+	$(COMPOSE) run --rm app php bin/console doctrine:migrations:migrate --no-interaction
+	$(COMPOSE) run --rm app php bin/console doctrine:fixtures:load --no-interaction
 
 schema-validate: ## Validate Doctrine mapping and database schema.
 	$(COMPOSE) run --rm --build app php bin/console doctrine:schema:validate
