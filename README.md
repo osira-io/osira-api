@@ -1,6 +1,10 @@
 # Osira API
 
 [![CI](https://github.com/osira-io/osira-api/actions/workflows/ci.yml/badge.svg)](https://github.com/osira-io/osira-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/osira-io/osira-api/branch/develop/graph/badge.svg)](https://codecov.io/gh/osira-io/osira-api)
+[![PHPStan level max](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
+[![PHP 8.4+](https://img.shields.io/badge/PHP-8.4%2B-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
+[![Symfony 8.1](https://img.shields.io/badge/Symfony-8.1-000000.svg?logo=symfony&logoColor=white)](https://symfony.com/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 Osira API is the Symfony and API Platform control plane for an open-source,
@@ -124,6 +128,24 @@ Groups are available under `/api/node-groups`. They are intended to support
 shared templates and configuration later; templates and inheritance are not
 implemented yet.
 
+Node and node-group collections are paginated with `page` and `itemsPerPage`
+(25 items by default, 100 maximum). Collection responses expose the records in
+`items` and pagination information in `metadata`:
+
+```json
+{
+  "items": [],
+  "metadata": {
+    "currentPage": 1,
+    "itemsPerPage": 25,
+    "totalItems": 0,
+    "totalPages": 0,
+    "hasPreviousPage": false,
+    "hasNextPage": false
+  }
+}
+```
+
 User accounts and JWTs authenticate administrators and operators of the control
 plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
@@ -154,6 +176,7 @@ command.
 | `make cs-fix` | Automatically fix PHP coding-standard violations |
 | `make analyse` | Run PHPStan at the maximum level |
 | `make test` | Run PHPUnit; use `ARGS="--filter Name"` to select tests |
+| `make coverage` | Generate `var/coverage.xml` with PCOV or Xdebug |
 | `make database-up` | Start the local PostgreSQL database |
 | `make migrate` | Apply Doctrine migrations |
 | `make schema-validate` | Validate Doctrine mapping and the database schema |

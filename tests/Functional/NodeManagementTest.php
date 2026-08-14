@@ -10,12 +10,10 @@ use App\Entity\Node;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
-#[CoversNothing]
 final class NodeManagementTest extends ApiTestCase
 {
     private const string PASSWORD = 'correct horse battery staple';
@@ -140,8 +138,32 @@ final class NodeManagementTest extends ApiTestCase
         self::assertIsArray($secondGroup);
         self::assertSame($productionId, $secondGroup['id'] ?? null);
 
-        $collection = $client->request('GET', '/api/node-groups', ['auth_bearer' => $token])->toArray();
-        self::assertCount(2, $collection);
+        $collection = $client->request('GET', '/api/node-groups?itemsPerPage=1&page=2', ['auth_bearer' => $token])->toArray();
+        $collectionItems = $collection['items'] ?? null;
+        $collectionMetadata = $collection['metadata'] ?? null;
+        self::assertIsArray($collectionItems);
+        self::assertIsArray($collectionMetadata);
+        self::assertCount(1, $collectionItems);
+        self::assertSame([
+            'currentPage' => 2,
+            'itemsPerPage' => 1,
+            'totalItems' => 2,
+            'totalPages' => 2,
+            'hasPreviousPage' => true,
+            'hasNextPage' => false,
+        ], $collectionMetadata);
+
+        $nodeCollection = $client->request('GET', '/api/nodes?itemsPerPage=1&page=2', ['auth_bearer' => $token])->toArray();
+        $nodeCollectionItems = $nodeCollection['items'] ?? null;
+        $nodeCollectionMetadata = $nodeCollection['metadata'] ?? null;
+        self::assertIsArray($nodeCollectionItems);
+        self::assertIsArray($nodeCollectionMetadata);
+        self::assertCount(1, $nodeCollectionItems);
+        self::assertSame(2, $nodeCollectionMetadata['totalItems'] ?? null);
+        self::assertSame(2, $nodeCollectionMetadata['totalPages'] ?? null);
+
+        $client->request('GET', '/api/node-groups?itemsPerPage=101', ['auth_bearer' => $token]);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
 
         $client->request('DELETE', '/api/node-groups/'.$productionId, ['auth_bearer' => $token]);
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);

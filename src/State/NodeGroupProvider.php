@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\State;
 
-use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\ApiResource\NodeGroupOutput;
@@ -19,13 +18,8 @@ final readonly class NodeGroupProvider implements ProviderInterface
     {
     }
 
-    /** @return NodeGroupOutput|list<NodeGroupOutput>|null */
-    public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
+    public function provide(Operation $operation, array $uriVariables = [], array $context = []): ?NodeGroupOutput
     {
-        if ($operation instanceof GetCollection) {
-            return array_map($this->outputFactory->create(...), $this->repository->findAllOrdered());
-        }
-
         $id = $uriVariables['id'] ?? null;
         if (!\is_string($id) || !Ulid::isValid($id)) {
             return null;

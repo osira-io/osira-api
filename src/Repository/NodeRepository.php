@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Node;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /** @extends ServiceEntityRepository<Node> */
@@ -16,15 +17,10 @@ final class NodeRepository extends ServiceEntityRepository
         parent::__construct($registry, Node::class);
     }
 
-    /** @return list<Node> */
-    public function findAllOrdered(): array
+    public function createOrderedQueryBuilder(): QueryBuilder
     {
-        /** @var list<Node> $nodes */
-        $nodes = $this->createQueryBuilder('node')
+        return $this->createQueryBuilder('node')
             ->orderBy('node.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        return $nodes;
+            ->addOrderBy('node.id', 'ASC');
     }
 }

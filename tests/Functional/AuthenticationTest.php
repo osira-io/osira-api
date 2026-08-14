@@ -9,11 +9,9 @@ use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[CoversNothing]
 final class AuthenticationTest extends ApiTestCase
 {
     protected static ?bool $alwaysBootKernel = true;

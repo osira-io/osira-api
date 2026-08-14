@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\NodeGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /** @extends ServiceEntityRepository<NodeGroup> */
@@ -16,15 +17,9 @@ final class NodeGroupRepository extends ServiceEntityRepository
         parent::__construct($registry, NodeGroup::class);
     }
 
-    /** @return list<NodeGroup> */
-    public function findAllOrdered(): array
+    public function createOrderedQueryBuilder(): QueryBuilder
     {
-        /** @var list<NodeGroup> $groups */
-        $groups = $this->createQueryBuilder('nodeGroup')
-            ->orderBy('nodeGroup.name', 'ASC')
-            ->getQuery()
-            ->getResult();
-
-        return $groups;
+        return $this->createQueryBuilder('nodeGroup')
+            ->orderBy('nodeGroup.name', 'ASC');
     }
 }

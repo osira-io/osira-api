@@ -12,11 +12,9 @@ use App\Security\TokenGenerator;
 use App\Security\TokenHasher;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[CoversNothing]
 final class EnrollmentFlowTest extends ApiTestCase
 {
     protected static ?bool $alwaysBootKernel = true;

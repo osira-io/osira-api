@@ -13,7 +13,7 @@ COMPOSE := $(DOCKER) compose
 
 ACTIONLINT_IMAGE := rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
-.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
+.PHONY: help dev dev-setup dev-stop dev-logs install update validate qa ci lint cs-check cs-fix analyse test coverage security grumphp workflow-lint hooks database-up database-down migrate schema-validate jwt-keys openapi cache-clear cache-warmup console
 
 help: ## Show the available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [ARGS=\"...\"]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -66,6 +66,9 @@ analyse: ## Run PHPStan at the maximum level.
 
 test: ## Run PHPUnit; pass options with ARGS="...".
 	$(COMPOSER) test -- $(ARGS)
+
+coverage: ## Run PHPUnit and generate var/coverage.xml (requires PCOV or Xdebug).
+	$(COMPOSER) test:coverage
 
 security: ## Audit locked dependencies and fail on abandoned packages.
 	$(COMPOSER) security

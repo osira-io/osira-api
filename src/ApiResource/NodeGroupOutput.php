@@ -8,7 +8,6 @@ use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
@@ -23,12 +22,6 @@ use Symfony\Component\HttpFoundation\Response;
 #[ApiResource(
     shortName: 'NodeGroup',
     operations: [
-        new GetCollection(
-            uriTemplate: '/node-groups',
-            paginationEnabled: false,
-            provider: NodeGroupProvider::class,
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
-        ),
         new Get(
             uriTemplate: '/node-groups/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],

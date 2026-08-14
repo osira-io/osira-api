@@ -7,7 +7,6 @@ namespace App\ApiResource;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Dto\UpdateNodeInput;
@@ -17,12 +16,6 @@ use App\State\UpdateNodeProcessor;
 #[ApiResource(
     shortName: 'Node',
     operations: [
-        new GetCollection(
-            uriTemplate: '/nodes',
-            paginationEnabled: false,
-            provider: NodeProvider::class,
-            openapi: new OpenApiOperation(security: [['JWT' => []]]),
-        ),
         new Get(
             uriTemplate: '/nodes/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],

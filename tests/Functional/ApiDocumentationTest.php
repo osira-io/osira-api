@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
-#[CoversNothing]
 final class ApiDocumentationTest extends ApiTestCase
 {
     public function testHomepageRedirectsToSwaggerUi(): void
@@ -49,6 +47,7 @@ final class ApiDocumentationTest extends ApiTestCase
         $nodeGroupItemPath = self::objectAt($paths, '/api/node-groups/{id}');
 
         self::assertArrayHasKey('patch', $nodePath);
+        self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
         self::assertArrayHasKey('get', $nodeGroupCollectionPath);
         self::assertArrayHasKey('post', $nodeGroupCollectionPath);
         self::assertArrayHasKey('patch', $nodeGroupItemPath);
@@ -61,6 +60,8 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringContainsString('environment', $encoded);
         self::assertStringContainsString('tags', $encoded);
         self::assertStringContainsString('groups', $encoded);
+        self::assertArrayHasKey('NodeCollection', $schemas);
+        self::assertArrayHasKey('NodeGroupCollection', $schemas);
         self::assertStringNotContainsString('hostname', $encoded);
         self::assertStringNotContainsString('architecture', $encoded);
         self::assertStringNotContainsString('secretHash', json_encode($document, \JSON_THROW_ON_ERROR));
