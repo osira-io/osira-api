@@ -14,5 +14,9 @@ parameters:
     phpVersion: 80400
     tmpDir: var/cache/phpstan
     reportUnmatchedIgnoredErrors: true
+    stubFiles:
+        # auditor 4 ships deprecated compatibility copies under the same namespace;
+        # runtime autoloading correctly selects auditor-doctrine-provider first.
+        - phpstan-stubs/auditor-doctrine-provider.stub
     symfony:
         containerXmlPath: var/cache/test/App_KernelTestDebugContainer.xml

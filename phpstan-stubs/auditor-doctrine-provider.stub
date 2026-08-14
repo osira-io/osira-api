@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DH\Auditor\Provider\Doctrine\Persistence\Reader;
+
+use DH\Auditor\Model\Entry;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\FilterInterface;
+
+/** @not-deprecated */
+final readonly class Reader
+{
+    /**
+     * @param array<string, mixed> $options
+     * @not-deprecated
+     */
+    public function createQuery(string $entity, array $options = []): Query
+    {
+    }
+}
+
+/** @not-deprecated */
+final class Query
+{
+    public const string CREATED_AT = 'created_at';
+
+    /** @not-deprecated */
+    public function addFilter(FilterInterface $filter): self
+    {
+    }
+
+    /** @not-deprecated */
+    public function count(): int
+    {
+    }
+
+    /** @not-deprecated */
+    public function limit(int $limit, int $offset = 0): self
+    {
+    }
+
+    /** @return array<Entry>
+     * @not-deprecated
+     */
+    public function execute(): array
+    {
+    }
+}
+
+namespace DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter;
+
+interface FilterInterface
+{
+}
+
+/** @not-deprecated */
+final readonly class DateRangeFilter implements FilterInterface
+{
+    public function __construct(string $name, ?\DateTimeInterface $minValue, ?\DateTimeInterface $maxValue = null)
+    {
+    }
+}
+
+namespace DH\Auditor\Model;
+
+final class Entry
+{
+    public ?int $id;
+    public string $type;
+    public string $objectId;
+    public int|string|null $userId;
+    public ?string $username;
+    public ?string $ip;
+    public ?string $userFirewall;
+    public ?\DateTimeImmutable $createdAt;
+
+    /** @return array<mixed, mixed> */
+    public function getDiffs(bool $includeMetadata = false): array
+    {
+    }
+}

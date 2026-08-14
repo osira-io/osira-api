@@ -67,7 +67,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-          extensions: ctype, dom, iconv, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+          extensions: ctype, dom, iconv, intl, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
           ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 
@@ -140,7 +140,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: none
-          extensions: ctype, dom, iconv, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+          extensions: ctype, dom, iconv, intl, json, mbstring, pdo_pgsql, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
           ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 
@@ -169,7 +169,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: pcov
-          extensions: ctype, dom, iconv, json, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+          extensions: ctype, dom, iconv, intl, json, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
           ini-values: memory_limit=-1, error_reporting=E_ALL
           tools: composer:v2
 

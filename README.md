@@ -101,6 +101,7 @@ be deleted or have the role removed.
 | Nodes | `nodes.read`, `nodes.update` |
 | Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
 | Enrollment | `enrollment_tokens.create` |
+| Audit | `audit_logs.read` |
 
 The initial system roles are:
 
@@ -129,6 +130,30 @@ authorization relies exclusively on permission codes.
 Future integrations may add explicit idempotent upsert endpoints such as
 `PUT /api/integrations/{source}/users/{externalId}`. No such integration or
 upsert behavior is implemented by the standard REST endpoints today.
+
+## Audit logs
+
+Osira records insert, update, removal, association, and dissociation events for
+the control-plane `User`, `Role`, `Permission`, `Node`, `NodeGroup`, `Agent`, and
+`EnrollmentToken` entities. Audit rows use `audit_*` tables in the same
+PostgreSQL database and transaction as the corresponding business change.
+`AgentCredential` is deliberately excluded because its lifecycle is purely
+technical and contains credential material.
+
+Authenticated HTTP changes include the user's ULID, e-mail address, client IP,
+and firewall context when available. Console changes use the Symfony command
+name as their actor. Passwords, technical Symfony roles, token hashes, and
+routine `createdAt`/`updatedAt` changes are excluded; the API also removes
+sensitive-looking fields as a defensive output safeguard.
+
+`GET /api/audits` is available only with `audit_logs.read`, granted initially
+to Super Admin and Admin. Operator and Viewer do not receive it. The endpoint
+uses the standard `items`/`metadata` pagination envelope and supports `entity`,
+`entityId`, `action`, `actor`, `dateFrom`, and `dateTo` filters. `entity` uses
+the short names listed above, `action` accepts `insert`, `update`, `remove`,
+`associate`, or `dissociate`, and `actor` matches a user ULID or CLI command
+identifier. Dates are inclusive ISO 8601 bounds. The third-party audit viewer
+is disabled; audit access remains inside the Osira API and RBAC model.
 
 ## Current user context
 
