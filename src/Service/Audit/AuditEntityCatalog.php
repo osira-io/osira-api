@@ -6,6 +6,8 @@ namespace App\Service\Audit;
 
 use App\Entity\Agent\Agent;
 use App\Entity\Enrollment\EnrollmentToken;
+use App\Entity\Monitoring\ItemDefinition;
+use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Entity\Rbac\Permission;
@@ -14,7 +16,7 @@ use App\Entity\User\User;
 
 final class AuditEntityCatalog
 {
-    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'Agent', 'EnrollmentToken'];
+    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'Agent', 'EnrollmentToken'];
 
     /** @var array<string, class-string> */
     public const array ENTITIES = [
@@ -23,6 +25,8 @@ final class AuditEntityCatalog
         'Permission' => Permission::class,
         'Node' => Node::class,
         'NodeGroup' => NodeGroup::class,
+        'MonitoringTemplate' => MonitoringTemplate::class,
+        'ItemDefinition' => ItemDefinition::class,
         'Agent' => Agent::class,
         'EnrollmentToken' => EnrollmentToken::class,
     ];
@@ -39,6 +43,8 @@ final class AuditEntityCatalog
         'Permission' => 'audit_permissions',
         'Node' => 'audit_nodes',
         'NodeGroup' => 'audit_node_groups',
+        'MonitoringTemplate' => 'audit_monitoring_templates',
+        'ItemDefinition' => 'audit_item_definitions',
         'Agent' => 'audit_agents',
         'EnrollmentToken' => 'audit_enrollment_tokens',
     ];

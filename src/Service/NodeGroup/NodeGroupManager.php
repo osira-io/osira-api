@@ -6,7 +6,9 @@ namespace App\Service\NodeGroup;
 
 use App\Dto\NodeGroup\CreateNodeGroupInput;
 use App\Dto\NodeGroup\UpdateNodeGroupInput;
+use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\NodeGroup\NodeGroup;
+use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\NodeGroup\NodeGroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
@@ -19,6 +21,7 @@ final readonly class NodeGroupManager
 {
     public function __construct(
         private NodeGroupRepository $repository,
+        private MonitoringTemplateRepository $monitoringTemplateRepository,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
     ) {
@@ -28,7 +31,9 @@ final readonly class NodeGroupManager
     {
         $name = self::normalizeName($input->name);
         $this->assertNameAvailable($name);
-        $group = new NodeGroup($name, self::normalizeDescription($input->description), $this->clock->now());
+        $now = $this->clock->now();
+        $group = new NodeGroup($name, self::normalizeDescription($input->description), $now);
+        $group->replaceMonitoringTemplates($this->resolveMonitoringTemplates($input->monitoringTemplateIds), $now);
         $this->entityManager->persist($group);
         $this->entityManager->flush();
 
@@ -44,7 +49,11 @@ final readonly class NodeGroupManager
             : $group->description();
 
         $this->assertNameAvailable($name, $group);
-        $group->update($name, $description, $this->clock->now());
+        $now = $this->clock->now();
+        $group->update($name, $description, $now);
+        if ($input->areMonitoringTemplateIdsProvided()) {
+            $group->replaceMonitoringTemplates($this->resolveMonitoringTemplates($input->getMonitoringTemplateIds()), $now);
+        }
         $this->entityManager->flush();
 
         return $group;
@@ -95,5 +104,26 @@ final readonly class NodeGroupManager
         $description = trim($description);
 
         return '' === $description ? null : $description;
+    }
+
+    /** @param list<string> $ids
+     * @return list<MonitoringTemplate>
+     */
+    private function resolveMonitoringTemplates(array $ids): array
+    {
+        $monitoringTemplates = [];
+        foreach (array_values(array_unique($ids)) as $id) {
+            if (!Ulid::isValid($id)) {
+                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+            }
+
+            $monitoringTemplate = $this->monitoringTemplateRepository->find(new Ulid($id));
+            if (!$monitoringTemplate instanceof MonitoringTemplate) {
+                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+            }
+            $monitoringTemplates[] = $monitoringTemplate;
+        }
+
+        return $monitoringTemplates;
     }
 }

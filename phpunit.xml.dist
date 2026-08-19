@@ -3,6 +3,11 @@
   <php>
     <env name="APP_ENV" value="test" force="true"/>
     <env name="APP_DEBUG" value="1" force="true"/>
+    <env name="KERNEL_CLASS" value="App\Kernel" force="true"/>
+    <env name="DATABASE_TEST_URL" value="sqlite:///%kernel.project_dir%/var/test.db" force="true"/>
+    <env name="JWT_SECRET_KEY" value="%kernel.project_dir%/var/jwt/test-private.pem" force="true"/>
+    <env name="JWT_PUBLIC_KEY" value="%kernel.project_dir%/var/jwt/test-public.pem" force="true"/>
+    <env name="JWT_PASSPHRASE" value="osira-test-passphrase" force="true"/>
     <env name="SHELL_VERBOSITY" value="-1"/>
   </php>
   <testsuites>
