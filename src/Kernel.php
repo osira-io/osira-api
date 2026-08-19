@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
-use App\Audit\Infrastructure\DependencyInjection\DisableAuditorViewerCompilerPass;
+use App\DependencyInjection\Compiler\DisableAuditorViewerCompilerPass;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
