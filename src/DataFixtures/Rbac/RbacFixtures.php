@@ -6,10 +6,10 @@ namespace App\DataFixtures\Rbac;
 
 use App\Entity\Rbac\Permission;
 use App\Entity\Rbac\Role;
+use App\Factory\Rbac\RoleFactory;
 use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
-use App\Factory\Rbac\RoleFactory;
 use App\Service\Rbac\RbacCatalogSynchronizer;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;

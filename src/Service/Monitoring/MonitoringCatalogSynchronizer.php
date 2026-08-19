@@ -7,10 +7,10 @@ namespace App\Service\Monitoring;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
-use App\Repository\Monitoring\ItemDefinitionRepository;
-use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Factory\Monitoring\ItemDefinitionFactory;
 use App\Factory\Monitoring\MonitoringTemplateFactory;
+use App\Repository\Monitoring\ItemDefinitionRepository;
+use App\Repository\Monitoring\MonitoringTemplateRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 
