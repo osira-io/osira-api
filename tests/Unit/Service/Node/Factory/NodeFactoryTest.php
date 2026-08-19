@@ -32,4 +32,33 @@ final class NodeFactoryTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->create('  ', null, 'linux', 'x86_64', new \DateTimeImmutable());
     }
+
+    public function testCreateNormalizesBlankDisplayNameToNullAndDefaultsCreatedAt(): void
+    {
+        $factory = new NodeFactory();
+        $firstSeenAt = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+
+        $node = $factory->create('srv-prod-01', '   ', 'linux', 'x86_64', $firstSeenAt);
+
+        self::assertNull($node->displayName());
+        self::assertSame($firstSeenAt, $node->createdAt());
+    }
+
+    public function testCreateRejectsBlankOs(): void
+    {
+        $factory = new NodeFactory();
+        $firstSeenAt = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->create('srv-prod-01', null, '   ', 'x86_64', $firstSeenAt);
+    }
+
+    public function testCreateRejectsBlankArchitecture(): void
+    {
+        $factory = new NodeFactory();
+        $firstSeenAt = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->create('srv-prod-01', null, 'linux', '   ', $firstSeenAt);
+    }
 }

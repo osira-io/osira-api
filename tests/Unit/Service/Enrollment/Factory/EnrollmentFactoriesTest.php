@@ -45,4 +45,42 @@ final class EnrollmentFactoriesTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->create('hash', $createdAt, $createdAt);
     }
+
+    public function testAgentFactoryRejectsBlankVersion(): void
+    {
+        $node = new Node('srv-01', null, 'linux', 'x86_64', new \DateTimeImmutable('2026-08-19T12:00:00+00:00'), new \DateTimeImmutable('2026-08-19T12:00:00+00:00'));
+        $factory = new AgentFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->create($node, '   ', new \DateTimeImmutable('2026-08-19T12:05:00+00:00'));
+    }
+
+    public function testAgentCredentialFactoryCreatesCredential(): void
+    {
+        $node = new Node('srv-01', null, 'linux', 'x86_64', new \DateTimeImmutable('2026-08-19T12:00:00+00:00'), new \DateTimeImmutable('2026-08-19T12:00:00+00:00'));
+        $agent = new AgentFactory()->create($node, '0.1.0', new \DateTimeImmutable('2026-08-19T12:05:00+00:00'));
+        $factory = new AgentCredentialFactory();
+        $createdAt = new \DateTimeImmutable('2026-08-19T12:06:00+00:00');
+        $expiresAt = new \DateTimeImmutable('2026-08-20T12:06:00+00:00');
+
+        $credential = $factory->create($agent, 'hashed-secret', $createdAt, $expiresAt);
+
+        self::assertSame($agent, $credential->agent());
+        self::assertSame($createdAt, $credential->createdAt());
+        self::assertSame($expiresAt, $credential->expiresAt());
+        self::assertTrue($credential->matchesSecretHash('hashed-secret'));
+    }
+
+    public function testEnrollmentTokenFactoryCreatesToken(): void
+    {
+        $factory = new EnrollmentTokenFactory();
+        $createdAt = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+        $expiresAt = new \DateTimeImmutable('2026-08-19T13:00:00+00:00');
+
+        $token = $factory->create('hash', $createdAt, $expiresAt);
+
+        self::assertSame('hash', $token->tokenHash());
+        self::assertSame($createdAt, $token->createdAt());
+        self::assertSame($expiresAt, $token->expiresAt());
+    }
 }

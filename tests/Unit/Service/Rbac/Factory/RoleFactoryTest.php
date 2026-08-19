@@ -32,4 +32,20 @@ final class RoleFactoryTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->normalizeSlug('---');
     }
+
+    public function testNormalizeNameRejectsBlankValue(): void
+    {
+        $factory = new RoleFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizeName('   ');
+    }
+
+    public function testNormalizeDescriptionConvertsBlankToNull(): void
+    {
+        $factory = new RoleFactory();
+
+        self::assertNull($factory->normalizeDescription('   '));
+        self::assertNull($factory->normalizeDescription(null));
+    }
 }

@@ -30,4 +30,12 @@ final class NodeGroupFactoryTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->normalizeName('   ');
     }
+
+    public function testNormalizeDescriptionConvertsBlankToNull(): void
+    {
+        $factory = new NodeGroupFactory();
+
+        self::assertNull($factory->normalizeDescription('   '));
+        self::assertNull($factory->normalizeDescription(null));
+    }
 }

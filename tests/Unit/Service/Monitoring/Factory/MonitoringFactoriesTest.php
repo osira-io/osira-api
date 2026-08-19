@@ -61,4 +61,62 @@ final class MonitoringFactoriesTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->normalizeKey('invalid key');
     }
+
+    public function testItemDefinitionFactoryNormalizesNullableValuesAndDefaults(): void
+    {
+        $factory = new ItemDefinitionFactory();
+
+        self::assertNull($factory->normalizeNullable(null));
+        self::assertNull($factory->normalizeNullable('   '));
+        self::assertSame('Category', $factory->normalizeNullable('  Category  '));
+        self::assertNull($factory->normalizeNullablePositive(null, 'unused'));
+    }
+
+    public function testItemDefinitionFactoryRejectsBlankName(): void
+    {
+        $factory = new ItemDefinitionFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizeName('   ');
+    }
+
+    public function testItemDefinitionFactoryRejectsNonPositiveInterval(): void
+    {
+        $factory = new ItemDefinitionFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizePositive(0, 'interval');
+    }
+
+    public function testItemDefinitionFactoryRejectsNonPositiveTimeout(): void
+    {
+        $factory = new ItemDefinitionFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizeNullablePositive(0, 'timeout');
+    }
+
+    public function testMonitoringTemplateFactoryRejectsBlankName(): void
+    {
+        $factory = new MonitoringTemplateFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizeName('   ');
+    }
+
+    public function testMonitoringTemplateFactoryRejectsInvalidSlug(): void
+    {
+        $factory = new MonitoringTemplateFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->normalizeSlug('---');
+    }
+
+    public function testMonitoringTemplateFactoryNormalizesBlankDescriptionToNull(): void
+    {
+        $factory = new MonitoringTemplateFactory();
+
+        self::assertNull($factory->normalizeDescription('   '));
+        self::assertNull($factory->normalizeDescription(null));
+    }
 }

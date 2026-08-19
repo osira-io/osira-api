@@ -30,4 +30,14 @@ final class UserFactoryTest extends TestCase
         $this->expectException(ResourceValidationException::class);
         $factory->normalizeEmail('   ');
     }
+
+    public function testCreateKeepsCustomTechnicalRoles(): void
+    {
+        $factory = new UserFactory();
+        $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+
+        $user = $factory->create('operator@example.com', $now, ['ROLE_OPERATOR']);
+
+        self::assertSame(['ROLE_OPERATOR', 'ROLE_USER'], $user->getRoles());
+    }
 }
