@@ -19,6 +19,9 @@ final class UpdateNodeInput
     private bool $groupsProvided = false;
     /** @var list<string> */
     private array $groups = [];
+    private bool $monitoringTemplateIdsProvided = false;
+    /** @var list<string> */
+    private array $monitoringTemplateIds = [];
 
     #[Assert\Length(max: 255)]
     public function getDisplayName(): ?string
@@ -96,5 +99,26 @@ final class UpdateNodeInput
     public function areGroupsProvided(): bool
     {
         return $this->groupsProvided;
+    }
+
+    /** @return list<string> */
+    #[Assert\Count(max: 100)]
+    #[Assert\All([new Assert\Type('string'), new Assert\Ulid()])]
+    public function getMonitoringTemplateIds(): array
+    {
+        return $this->monitoringTemplateIds;
+    }
+
+    /** @param list<string> $monitoringTemplateIds */
+    public function setMonitoringTemplateIds(array $monitoringTemplateIds): void
+    {
+        $this->monitoringTemplateIdsProvided = true;
+        $this->monitoringTemplateIds = $monitoringTemplateIds;
+    }
+
+    #[Ignore]
+    public function areMonitoringTemplateIdsProvided(): bool
+    {
+        return $this->monitoringTemplateIdsProvided;
     }
 }

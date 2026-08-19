@@ -167,6 +167,49 @@ final class AuditLogTest extends ApiTestCase
             self::assertNotEmpty($this->auditItems($client, $token, 'NodeGroup', $groupId, $action));
         }
 
+        $itemDefinition = $client->request('POST', '/api/item-definitions', [
+            'auth_bearer' => $token,
+            'json' => [
+                'key' => 'audit.custom.item',
+                'name' => 'Audited custom item',
+                'valueType' => 'float',
+                'intervalSeconds' => 60,
+            ],
+        ])->toArray();
+        $itemDefinitionId = $itemDefinition['id'] ?? null;
+        self::assertIsString($itemDefinitionId);
+        $client->request('PATCH', '/api/item-definitions/'.$itemDefinitionId, [
+            'auth_bearer' => $token,
+            'json' => ['description' => 'Updated by audit test'],
+        ]);
+        self::assertResponseIsSuccessful();
+        self::assertNotEmpty($this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'insert'));
+        self::assertNotEmpty($this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'update'));
+
+        $monitoringTemplate = $client->request('POST', '/api/monitoring-templates', [
+            'auth_bearer' => $token,
+            'json' => [
+                'name' => 'Audit template',
+                'itemDefinitionIds' => [$itemDefinitionId],
+            ],
+        ])->toArray();
+        $monitoringTemplateId = $monitoringTemplate['id'] ?? null;
+        self::assertIsString($monitoringTemplateId);
+        $client->request('PATCH', '/api/monitoring-templates/'.$monitoringTemplateId, [
+            'auth_bearer' => $token,
+            'json' => ['description' => 'Patched for audit coverage'],
+        ]);
+        self::assertResponseIsSuccessful();
+        $client->request('DELETE', '/api/monitoring-templates/'.$monitoringTemplateId, ['auth_bearer' => $token]);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        self::assertNotEmpty($this->auditItems($client, $token, 'MonitoringTemplate', $monitoringTemplateId, 'insert'));
+        self::assertNotEmpty($this->auditItems($client, $token, 'MonitoringTemplate', $monitoringTemplateId, 'update'));
+        self::assertNotEmpty($this->auditItems($client, $token, 'MonitoringTemplate', $monitoringTemplateId, 'remove'));
+
+        $client->request('DELETE', '/api/item-definitions/'.$itemDefinitionId, ['auth_bearer' => $token]);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        self::assertNotEmpty($this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'remove'));
+
         $enrollment = $client->request('POST', '/api/enrollment-tokens', ['auth_bearer' => $token, 'json' => []])->toArray();
         $enrollmentId = $enrollment['id'] ?? null;
         $rawToken = $enrollment['token'] ?? null;

@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
+use App\Dto\Monitoring\MonitoringTemplateSummary;
 use App\Security\Rbac\PermissionCode;
 use App\State\Processor\NodeGroup\CreateNodeGroupProcessor;
 use App\State\Processor\NodeGroup\DeleteNodeGroupProcessor;
@@ -65,6 +66,8 @@ final readonly class NodeGroupOutput
         public string $id,
         public string $name,
         public ?string $description,
+        /** @var list<MonitoringTemplateSummary> */
+        public array $monitoringTemplates,
         public \DateTimeImmutable $createdAt,
         public \DateTimeImmutable $updatedAt,
     ) {

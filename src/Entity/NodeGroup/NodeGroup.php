@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity\NodeGroup;
 
+use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\NodeGroup\NodeGroupRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UlidType;
@@ -31,6 +34,13 @@ final class NodeGroup
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
+    /** @var Collection<int, MonitoringTemplate> */
+    #[ORM\ManyToMany(targetEntity: MonitoringTemplate::class, inversedBy: 'nodeGroups')]
+    #[ORM\JoinTable(name: 'node_group_monitoring_templates')]
+    #[ORM\JoinColumn(name: 'node_group_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'monitoring_template_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $monitoringTemplates;
+
     public function __construct(string $name, ?string $description, \DateTimeImmutable $now)
     {
         $this->id = new Ulid();
@@ -38,6 +48,7 @@ final class NodeGroup
         $this->description = $description;
         $this->createdAt = $now;
         $this->updatedAt = $now;
+        $this->monitoringTemplates = new ArrayCollection();
     }
 
     public function id(): Ulid
@@ -65,10 +76,43 @@ final class NodeGroup
         return $this->updatedAt;
     }
 
+    /** @return Collection<int, MonitoringTemplate> */
+    public function monitoringTemplates(): Collection
+    {
+        return $this->monitoringTemplates;
+    }
+
     public function update(string $name, ?string $description, \DateTimeImmutable $now): void
     {
         $this->name = $name;
         $this->description = $description;
         $this->updatedAt = $now;
+    }
+
+    /** @param list<MonitoringTemplate> $monitoringTemplates */
+    public function replaceMonitoringTemplates(array $monitoringTemplates, \DateTimeImmutable $now): void
+    {
+        foreach ($this->monitoringTemplates->toArray() as $monitoringTemplate) {
+            $this->removeMonitoringTemplate($monitoringTemplate);
+        }
+        foreach ($monitoringTemplates as $monitoringTemplate) {
+            $this->addMonitoringTemplate($monitoringTemplate);
+        }
+        $this->updatedAt = $now;
+    }
+
+    private function addMonitoringTemplate(MonitoringTemplate $monitoringTemplate): void
+    {
+        if (!$this->monitoringTemplates->contains($monitoringTemplate)) {
+            $this->monitoringTemplates->add($monitoringTemplate);
+            $monitoringTemplate->addNodeGroup($this);
+        }
+    }
+
+    private function removeMonitoringTemplate(MonitoringTemplate $monitoringTemplate): void
+    {
+        if ($this->monitoringTemplates->removeElement($monitoringTemplate)) {
+            $monitoringTemplate->removeNodeGroup($this);
+        }
     }
 }

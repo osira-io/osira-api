@@ -121,6 +121,8 @@ final class ApiDocumentationTest extends ApiTestCase
             'Permission',
             'Node',
             'NodeGroup',
+            'MonitoringTemplate',
+            'ItemDefinition',
             'EnrollmentToken',
             'AgentEnrollment',
             'Audit',

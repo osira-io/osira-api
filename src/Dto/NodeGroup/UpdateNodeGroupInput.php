@@ -13,6 +13,9 @@ final class UpdateNodeGroupInput
     private ?string $name = null;
     private bool $descriptionProvided = false;
     private ?string $description = null;
+    private bool $monitoringTemplateIdsProvided = false;
+    /** @var list<string> */
+    private array $monitoringTemplateIds = [];
 
     #[Assert\NotBlank(allowNull: true)]
     #[Assert\Length(max: 128)]
@@ -49,5 +52,26 @@ final class UpdateNodeGroupInput
     public function isDescriptionProvided(): bool
     {
         return $this->descriptionProvided;
+    }
+
+    /** @return list<string> */
+    #[Assert\Count(max: 100)]
+    #[Assert\All([new Assert\Type('string'), new Assert\Ulid()])]
+    public function getMonitoringTemplateIds(): array
+    {
+        return $this->monitoringTemplateIds;
+    }
+
+    /** @param list<string> $monitoringTemplateIds */
+    public function setMonitoringTemplateIds(array $monitoringTemplateIds): void
+    {
+        $this->monitoringTemplateIdsProvided = true;
+        $this->monitoringTemplateIds = $monitoringTemplateIds;
+    }
+
+    #[Ignore]
+    public function areMonitoringTemplateIdsProvided(): bool
+    {
+        return $this->monitoringTemplateIdsProvided;
     }
 }

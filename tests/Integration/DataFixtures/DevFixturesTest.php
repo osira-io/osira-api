@@ -7,6 +7,8 @@ namespace App\Tests\Integration\DataFixtures;
 use App\DataFixtures\Rbac\RbacFixtures;
 use App\DataFixtures\User\UserFixtures;
 use App\Entity\Agent\Agent;
+use App\Entity\Monitoring\ItemDefinition;
+use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Entity\Rbac\Role;
@@ -168,6 +170,26 @@ final class DevFixturesTest extends KernelTestCase
         self::assertSame(0, $this->countRows('agent_credentials'), 'Fixtures must never create a usable AgentCredential.');
     }
 
+    public function testMonitoringCatalogFixturesSeedSystemTemplatesItemsAndAssignments(): void
+    {
+        $templates = $this->entityManager->getRepository(MonitoringTemplate::class)->findAll();
+        self::assertCount(3, $templates);
+        self::assertSame(15, $this->entityManager->getRepository(ItemDefinition::class)->count([]));
+
+        $linuxBase = $this->entityManager->getRepository(MonitoringTemplate::class)->findOneBy(['slug' => 'linux-base']);
+        self::assertInstanceOf(MonitoringTemplate::class, $linuxBase);
+        self::assertTrue($linuxBase->isSystem());
+        self::assertCount(9, $linuxBase->itemDefinitions());
+
+        $linuxServers = self::getContainer()->get(NodeGroupRepository::class)->findOneBy(['name' => 'Linux Servers']);
+        self::assertInstanceOf(NodeGroup::class, $linuxServers);
+        self::assertSame(['linux-base'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $linuxServers->monitoringTemplates()->toArray()));
+
+        $prodCache = self::getContainer()->get(NodeRepository::class)->findOneBy(['hostname' => 'prod-cache-01']);
+        self::assertInstanceOf(Node::class, $prodCache);
+        self::assertSame(['docker-base'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $prodCache->monitoringTemplates()->toArray()));
+    }
+
     public function testNoRawSecretIsPresentInTheSeededData(): void
     {
         self::assertSame(0, $this->countRows('enrollment_tokens'), 'Fixtures must not create enrollment tokens.');
@@ -199,6 +221,8 @@ final class DevFixturesTest extends KernelTestCase
             'roles' => $this->countRows('roles'),
             'nodes' => $this->countRows('nodes'),
             'node_groups' => $this->countRows('node_groups'),
+            'monitoring_templates' => $this->countRows('monitoring_templates'),
+            'item_definitions' => $this->countRows('item_definitions'),
             'agents' => $this->countRows('agents'),
         ];
     }

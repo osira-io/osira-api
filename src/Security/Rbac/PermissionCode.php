@@ -23,6 +23,14 @@ final class PermissionCode
     public const string NODE_GROUPS_DELETE = 'node_groups.delete';
     public const string ENROLLMENT_TOKENS_CREATE = 'enrollment_tokens.create';
     public const string AUDIT_LOGS_READ = 'audit_logs.read';
+    public const string MONITORING_TEMPLATES_READ = 'monitoring_templates.read';
+    public const string MONITORING_TEMPLATES_CREATE = 'monitoring_templates.create';
+    public const string MONITORING_TEMPLATES_UPDATE = 'monitoring_templates.update';
+    public const string MONITORING_TEMPLATES_DELETE = 'monitoring_templates.delete';
+    public const string ITEM_DEFINITIONS_READ = 'item_definitions.read';
+    public const string ITEM_DEFINITIONS_CREATE = 'item_definitions.create';
+    public const string ITEM_DEFINITIONS_UPDATE = 'item_definitions.update';
+    public const string ITEM_DEFINITIONS_DELETE = 'item_definitions.delete';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -45,6 +53,14 @@ final class PermissionCode
             self::NODE_GROUPS_DELETE => self::entry('Delete node groups', 'Delete node groups.', 'Node groups'),
             self::ENROLLMENT_TOKENS_CREATE => self::entry('Create enrollment tokens', 'Issue one-time agent enrollment tokens.', 'Enrollment'),
             self::AUDIT_LOGS_READ => self::entry('View audit logs', 'Allows viewing the audit history of Osira resources.', 'Audit'),
+            self::MONITORING_TEMPLATES_READ => self::entry('Read monitoring templates', 'View monitoring templates and their assignments.', 'Monitoring'),
+            self::MONITORING_TEMPLATES_CREATE => self::entry('Create monitoring templates', 'Create monitoring templates.', 'Monitoring'),
+            self::MONITORING_TEMPLATES_UPDATE => self::entry('Update monitoring templates', 'Update monitoring templates and their item assignments.', 'Monitoring'),
+            self::MONITORING_TEMPLATES_DELETE => self::entry('Delete monitoring templates', 'Delete non-system monitoring templates.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_READ => self::entry('Read item definitions', 'View item definitions.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_CREATE => self::entry('Create item definitions', 'Create item definitions.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_UPDATE => self::entry('Update item definitions', 'Update item definitions.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_DELETE => self::entry('Delete item definitions', 'Delete non-system item definitions.', 'Monitoring'),
         ];
     }
 

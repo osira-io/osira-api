@@ -26,6 +26,8 @@ final readonly class TagOrderOpenApiFactory implements OpenApiFactoryInterface
         'Permission',
         'Node',
         'NodeGroup',
+        'MonitoringTemplate',
+        'ItemDefinition',
         'EnrollmentToken',
         'AgentEnrollment',
         'Audit',

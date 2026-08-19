@@ -14,4 +14,9 @@ final class CreateNodeGroupInput
 
     #[Assert\Length(max: 2000)]
     public ?string $description = null;
+
+    /** @var list<string> */
+    #[Assert\Count(max: 100)]
+    #[Assert\All([new Assert\Type('string'), new Assert\Ulid()])]
+    public array $monitoringTemplateIds = [];
 }

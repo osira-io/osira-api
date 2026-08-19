@@ -18,6 +18,8 @@ dh_auditor:
                 App\Entity\Rbac\Permission: ~
                 App\Entity\Node\Node: ~
                 App\Entity\NodeGroup\NodeGroup: ~
+                App\Entity\Monitoring\MonitoringTemplate: ~
+                App\Entity\Monitoring\ItemDefinition: ~
                 App\Entity\Agent\Agent: ~
                 App\Entity\Enrollment\EnrollmentToken:
                     ignored_columns:

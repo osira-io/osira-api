@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Node;
 
 use App\Dto\Node\UpdateNodeInput;
+use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
+use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\Node\NodeRepository;
 use App\Repository\NodeGroup\NodeGroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,6 +21,7 @@ final readonly class NodeUpdater
     public function __construct(
         private NodeRepository $nodeRepository,
         private NodeGroupRepository $nodeGroupRepository,
+        private MonitoringTemplateRepository $monitoringTemplateRepository,
         private EntityManagerInterface $entityManager,
     ) {
     }
@@ -45,6 +48,9 @@ final readonly class NodeUpdater
         $node->updateBusinessProperties($displayName, $environment, $tags);
         if ($input->areGroupsProvided()) {
             $node->replaceGroups($this->resolveGroups($input->getGroups()));
+        }
+        if ($input->areMonitoringTemplateIdsProvided()) {
+            $node->replaceMonitoringTemplates($this->resolveMonitoringTemplates($input->getMonitoringTemplateIds()));
         }
 
         $this->entityManager->flush();
@@ -119,5 +125,26 @@ final readonly class NodeUpdater
         }
 
         return $groups;
+    }
+
+    /** @param list<string> $ids
+     * @return list<MonitoringTemplate>
+     */
+    private function resolveMonitoringTemplates(array $ids): array
+    {
+        $monitoringTemplates = [];
+        foreach (array_values(array_unique($ids)) as $id) {
+            if (!Ulid::isValid($id)) {
+                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+            }
+
+            $monitoringTemplate = $this->monitoringTemplateRepository->find(new Ulid($id));
+            if (!$monitoringTemplate instanceof MonitoringTemplate) {
+                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+            }
+            $monitoringTemplates[] = $monitoringTemplate;
+        }
+
+        return $monitoringTemplates;
     }
 }
