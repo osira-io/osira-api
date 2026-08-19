@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Enrollment\Factory;
+namespace App\Factory\Enrollment;
 
 use App\Entity\Agent\Agent;
 use App\Entity\Node\Node;

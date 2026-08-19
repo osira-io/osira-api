@@ -6,9 +6,9 @@ namespace App\Service\Enrollment;
 
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
-use App\Service\Enrollment\Factory\AgentCredentialFactory;
-use App\Service\Enrollment\Factory\AgentFactory;
-use App\Service\Node\Factory\NodeFactory;
+use App\Factory\Enrollment\AgentCredentialFactory;
+use App\Factory\Enrollment\AgentFactory;
+use App\Factory\Node\NodeFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 

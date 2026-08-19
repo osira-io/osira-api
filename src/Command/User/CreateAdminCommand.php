@@ -9,7 +9,7 @@ use App\Repository\Rbac\RoleRepository;
 use App\Repository\User\UserRepository;
 use App\Security\Rbac\SystemRole;
 use App\Service\Rbac\RbacCatalogSynchronizer;
-use App\Service\User\Factory\UserFactory;
+use App\Factory\User\UserFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Console\Attribute\AsCommand;

@@ -6,7 +6,7 @@ namespace App\Service\Enrollment;
 
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
-use App\Service\Enrollment\Factory\EnrollmentTokenFactory;
+use App\Factory\Enrollment\EnrollmentTokenFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 

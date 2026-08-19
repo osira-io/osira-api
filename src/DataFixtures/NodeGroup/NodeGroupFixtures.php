@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataFixtures\NodeGroup;
 
-use App\Service\NodeGroup\Factory\NodeGroupFactory;
+use App\Factory\NodeGroup\NodeGroupFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;

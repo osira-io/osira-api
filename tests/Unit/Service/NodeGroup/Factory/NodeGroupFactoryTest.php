@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service\NodeGroup\Factory;
 
-use App\Service\NodeGroup\Factory\NodeGroupFactory;
+use App\Factory\NodeGroup\NodeGroupFactory;
 use App\Service\Shared\Exception\ResourceValidationException;
 use PHPUnit\Framework\TestCase;
 

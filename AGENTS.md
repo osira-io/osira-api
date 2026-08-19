@@ -59,6 +59,7 @@ The repository uses the technical-type plus domain layout below and the namespac
 
 ```text
 src/
+├── Factory/<Domain>/
 ├── Entity/<Domain>/
 ├── Repository/<Domain>/
 ├── Service/<Domain>/
@@ -91,7 +92,7 @@ Examples:
 - Keep Doctrine mappings explicit, initialize collections in constructors, and maintain owning/inverse sides deliberately.
 - Do not add interfaces, factories, traits, listeners, or subscribers mechanically.
 - Entity creation for non-trivial Doctrine resources must follow `Processor / Command -> Service -> Factory -> Entity -> EntityManager/Repository`.
-- Place entity factories under `src/Service/<Domain>/Factory/`.
+- Place entity factories under `src/Factory/<Domain>/`.
 - A factory returns a fully initialized new entity and never persists, flushes, authorizes, or maps HTTP.
 - Do not scatter `new Entity(...)` across processors, commands, or application services once a factory exists.
 - Add a factory only when construction has meaningful invariants, service dependencies, clocks, or secret/token generation.

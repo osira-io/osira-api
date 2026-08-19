@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service\User\Factory;
 
+use App\Factory\User\UserFactory;
 use App\Service\Shared\Exception\ResourceValidationException;
-use App\Service\User\Factory\UserFactory;
 use PHPUnit\Framework\TestCase;
 
 final class UserFactoryTest extends TestCase

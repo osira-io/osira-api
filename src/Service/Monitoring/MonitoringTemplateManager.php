@@ -10,7 +10,7 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\Monitoring\ItemDefinitionRepository;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
-use App\Service\Monitoring\Factory\MonitoringTemplateFactory;
+use App\Factory\Monitoring\MonitoringTemplateFactory;
 use App\Service\Shared\Exception\ResourceConflictException;
 use App\Service\Shared\Exception\ResourceNotFoundException;
 use App\Service\Shared\Exception\ResourceValidationException;

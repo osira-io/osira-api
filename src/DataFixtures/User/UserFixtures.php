@@ -9,7 +9,7 @@ use App\Entity\Rbac\Role;
 use App\Entity\User\User;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\SystemRole;
-use App\Service\User\Factory\UserFactory;
+use App\Factory\User\UserFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;

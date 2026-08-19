@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Enrollment\Factory;
+namespace App\Factory\Enrollment;
 
 use App\Entity\Enrollment\EnrollmentToken;
 use App\Service\Shared\Exception\ResourceValidationException;

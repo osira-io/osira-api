@@ -11,7 +11,7 @@ use App\Entity\Rbac\Role;
 use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\SystemRole;
-use App\Service\Rbac\Factory\RoleFactory;
+use App\Factory\Rbac\RoleFactory;
 use App\Service\Shared\Exception\ResourceConflictException;
 use App\Service\Shared\Exception\ResourceNotFoundException;
 use App\Service\Shared\Exception\ResourceValidationException;

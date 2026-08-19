@@ -19,7 +19,7 @@ Use this skill after reading the repository root `AGENTS.md`.
 1. Inspect the existing implementation and nearby patterns.
 2. Choose the smallest Symfony/Doctrine/API Platform mechanism that fits.
 3. Work in TDD order: Red -> Green -> Refactor.
-4. Route non-trivial Doctrine entity creation through `Service/<Domain>/Factory/<Entity>Factory` when the repository already uses that convention.
+4. Route non-trivial Doctrine entity creation through `Factory/<Domain>/<Entity>Factory` when the repository already uses that convention.
 5. Update RBAC for any sensitive new capability.
 6. Update audit coverage when a business-significant state change is added to the audited surface.
 7. Update OpenAPI, migrations, fixtures, and documentation when the diff requires them.

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service\Enrollment\Factory;
 
 use App\Entity\Node\Node;
-use App\Service\Enrollment\Factory\AgentCredentialFactory;
-use App\Service\Enrollment\Factory\AgentFactory;
-use App\Service\Enrollment\Factory\EnrollmentTokenFactory;
+use App\Factory\Enrollment\AgentCredentialFactory;
+use App\Factory\Enrollment\AgentFactory;
+use App\Factory\Enrollment\EnrollmentTokenFactory;
 use App\Service\Shared\Exception\ResourceValidationException;
 use PHPUnit\Framework\TestCase;
 

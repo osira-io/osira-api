@@ -9,7 +9,7 @@ use App\Dto\Monitoring\UpdateItemDefinitionInput;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Repository\Monitoring\ItemDefinitionRepository;
-use App\Service\Monitoring\Factory\ItemDefinitionFactory;
+use App\Factory\Monitoring\ItemDefinitionFactory;
 use App\Service\Shared\Exception\ResourceConflictException;
 use App\Service\Shared\Exception\ResourceNotFoundException;
 use Doctrine\ORM\EntityManagerInterface;

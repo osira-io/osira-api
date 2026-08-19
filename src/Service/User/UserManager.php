@@ -14,7 +14,7 @@ use App\Security\Rbac\SystemRole;
 use App\Service\Shared\Exception\ResourceConflictException;
 use App\Service\Shared\Exception\ResourceNotFoundException;
 use App\Service\Shared\Exception\ResourceValidationException;
-use App\Service\User\Factory\UserFactory;
+use App\Factory\User\UserFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;

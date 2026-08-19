@@ -9,8 +9,8 @@ use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\Monitoring\ItemDefinitionRepository;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
-use App\Service\Monitoring\Factory\ItemDefinitionFactory;
-use App\Service\Monitoring\Factory\MonitoringTemplateFactory;
+use App\Factory\Monitoring\ItemDefinitionFactory;
+use App\Factory\Monitoring\MonitoringTemplateFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service\Monitoring\Factory;
 
 use App\Entity\Monitoring\ItemValueType;
-use App\Service\Monitoring\Factory\ItemDefinitionFactory;
-use App\Service\Monitoring\Factory\MonitoringTemplateFactory;
+use App\Factory\Monitoring\ItemDefinitionFactory;
+use App\Factory\Monitoring\MonitoringTemplateFactory;
 use App\Service\Shared\Exception\ResourceValidationException;
 use PHPUnit\Framework\TestCase;
 

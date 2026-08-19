@@ -28,7 +28,7 @@ Use this reference for entity, mapping, and persistence decisions.
 
 ## Factories and construction
 
-- In `osira-api`, non-trivial Doctrine entity creation should go through `Service/<Domain>/Factory/<Entity>Factory`.
+- In `osira-api`, non-trivial Doctrine entity creation should go through `Factory/<Domain>/<Entity>Factory`.
 - Keep factories focused on construction, normalization, and creation-time invariants only.
 - Do not let factories persist, flush, authorize, or orchestrate use cases.
 - Direct `new Entity(...)` remains acceptable in narrow entity-focused unit tests when it keeps the test simpler.

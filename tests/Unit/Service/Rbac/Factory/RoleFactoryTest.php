@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service\Rbac\Factory;
 
-use App\Service\Rbac\Factory\RoleFactory;
+use App\Factory\Rbac\RoleFactory;
 use App\Service\Shared\Exception\ResourceValidationException;
 use PHPUnit\Framework\TestCase;
 

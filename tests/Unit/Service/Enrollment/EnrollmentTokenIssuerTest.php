@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service\Enrollment;
 
 use App\Entity\Enrollment\EnrollmentToken;
+use App\Factory\Enrollment\EnrollmentTokenFactory;
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
 use App\Service\Enrollment\EnrollmentTokenIssuer;
-use App\Service\Enrollment\Factory\EnrollmentTokenFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

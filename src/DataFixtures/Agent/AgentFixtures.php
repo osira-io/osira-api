@@ -8,7 +8,7 @@ use App\DataFixtures\Node\NodeFixtures;
 use App\Entity\Agent\Agent;
 use App\Entity\Node\Node;
 use App\Repository\Node\NodeRepository;
-use App\Service\Enrollment\Factory\AgentFactory;
+use App\Factory\Enrollment\AgentFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;

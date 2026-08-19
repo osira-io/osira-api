@@ -6,7 +6,7 @@ namespace App\DataFixtures\Node;
 
 use App\DataFixtures\NodeGroup\NodeGroupFixtures;
 use App\Entity\NodeGroup\NodeGroup;
-use App\Service\Node\Factory\NodeFactory;
+use App\Factory\Node\NodeFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;

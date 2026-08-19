@@ -10,7 +10,7 @@ use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
-use App\Service\Rbac\Factory\RoleFactory;
+use App\Factory\Rbac\RoleFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 

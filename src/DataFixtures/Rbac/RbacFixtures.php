@@ -9,7 +9,7 @@ use App\Entity\Rbac\Role;
 use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
-use App\Service\Rbac\Factory\RoleFactory;
+use App\Factory\Rbac\RoleFactory;
 use App\Service\Rbac\RbacCatalogSynchronizer;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;

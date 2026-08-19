@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\User\Factory;
+namespace App\Factory\User;
 
 use App\Entity\User\User;
 use App\Service\Shared\Exception\ResourceValidationException;

@@ -8,6 +8,7 @@ Place classes under `src/<TechnicalType>/<Domain>/...` and keep namespaces align
 
 Main technical roots in this repository:
 
+- `Factory`
 - `Entity`
 - `Repository`
 - `Service`
@@ -26,7 +27,7 @@ Main technical roots in this repository:
 - Reads belong in `State/Provider/<Domain>/`.
 - Writes belong in `State/Processor/<Domain>/`.
 - Domain/application logic belongs in `Service/<Domain>/`.
-- Entity factories that are justified by repository convention belong in `Service/<Domain>/Factory/`.
+- Entity factories that are justified by repository convention belong in `Factory/<Domain>/`.
 - Persistence logic stays in Doctrine repositories when query-specific.
 
 ## Static enforcement
