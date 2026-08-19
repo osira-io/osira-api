@@ -44,16 +44,16 @@ final class Version20260819110000 extends AbstractMigration
         $this->addSql('CREATE UNIQUE INDEX uniq_item_definitions_key ON item_definitions (key_name)');
 
         $this->addSql('CREATE TABLE monitoring_template_item_definitions (monitoring_template_id UUID NOT NULL, item_definition_id UUID NOT NULL, PRIMARY KEY(monitoring_template_id, item_definition_id))');
-        $this->addSql('CREATE INDEX idx_mt_items_template ON monitoring_template_item_definitions (monitoring_template_id)');
-        $this->addSql('CREATE INDEX idx_mt_items_item ON monitoring_template_item_definitions (item_definition_id)');
+        $this->addSql('CREATE INDEX IDX_D1CFB585BB64145D ON monitoring_template_item_definitions (monitoring_template_id)');
+        $this->addSql('CREATE INDEX IDX_D1CFB5853DB201CA ON monitoring_template_item_definitions (item_definition_id)');
 
         $this->addSql('CREATE TABLE node_monitoring_templates (node_id UUID NOT NULL, monitoring_template_id UUID NOT NULL, PRIMARY KEY(node_id, monitoring_template_id))');
-        $this->addSql('CREATE INDEX idx_node_monitoring_template_node ON node_monitoring_templates (node_id)');
-        $this->addSql('CREATE INDEX idx_node_monitoring_template_template ON node_monitoring_templates (monitoring_template_id)');
+        $this->addSql('CREATE INDEX IDX_D8FFACCF460D9FD7 ON node_monitoring_templates (node_id)');
+        $this->addSql('CREATE INDEX IDX_D8FFACCFBB64145D ON node_monitoring_templates (monitoring_template_id)');
 
         $this->addSql('CREATE TABLE node_group_monitoring_templates (node_group_id UUID NOT NULL, monitoring_template_id UUID NOT NULL, PRIMARY KEY(node_group_id, monitoring_template_id))');
-        $this->addSql('CREATE INDEX idx_node_group_monitoring_template_group ON node_group_monitoring_templates (node_group_id)');
-        $this->addSql('CREATE INDEX idx_node_group_monitoring_template_template ON node_group_monitoring_templates (monitoring_template_id)');
+        $this->addSql('CREATE INDEX IDX_5680994E40F9C112 ON node_group_monitoring_templates (node_group_id)');
+        $this->addSql('CREATE INDEX IDX_5680994EBB64145D ON node_group_monitoring_templates (monitoring_template_id)');
 
         $this->addSql('ALTER TABLE monitoring_template_item_definitions ADD CONSTRAINT fk_mt_items_template FOREIGN KEY (monitoring_template_id) REFERENCES monitoring_templates (id) ON DELETE CASCADE NOT DEFERRABLE');
         $this->addSql('ALTER TABLE monitoring_template_item_definitions ADD CONSTRAINT fk_mt_items_item FOREIGN KEY (item_definition_id) REFERENCES item_definitions (id) ON DELETE CASCADE NOT DEFERRABLE');
