@@ -1,0 +1,4 @@
+interface:
+  display_name: "Osira API Dev"
+  short_description: "Symfony/API Platform workflow for osira-api"
+  default_prompt: "Use $osira-api-dev to implement or refactor a focused osira-api change and validate it with the repository quality gates."

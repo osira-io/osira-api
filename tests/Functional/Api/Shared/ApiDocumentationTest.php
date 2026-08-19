@@ -52,6 +52,9 @@ final class ApiDocumentationTest extends ApiTestCase
         $permissionCollectionPath = self::objectAt($paths, '/api/permissions');
         $permissionItemPath = self::objectAt($paths, '/api/permissions/{id}');
         $currentUserPath = self::objectAt($paths, '/api/me');
+        $metricInstantPath = self::objectAt($paths, '/api/metrics/query');
+        $metricRangePath = self::objectAt($paths, '/api/metrics/query-range');
+        $nodeMetricsPath = self::objectAt($paths, '/api/nodes/{id}/metrics');
 
         self::assertArrayHasKey('patch', $nodePath);
         self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
@@ -74,6 +77,9 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $permissionItemPath);
         self::assertArrayHasKey('get', $currentUserPath);
         self::assertArrayHasKey('patch', $currentUserPath);
+        self::assertArrayHasKey('get', $metricInstantPath);
+        self::assertArrayHasKey('get', $metricRangePath);
+        self::assertArrayHasKey('get', $nodeMetricsPath);
 
         $components = self::objectAt($document, 'components');
         $schemas = self::objectAt($components, 'schemas');
@@ -123,6 +129,7 @@ final class ApiDocumentationTest extends ApiTestCase
             'NodeGroup',
             'MonitoringTemplate',
             'ItemDefinition',
+            'Metric',
             'EnrollmentToken',
             'AgentEnrollment',
             'Audit',

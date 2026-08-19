@@ -62,7 +62,7 @@ final class DevFixturesTest extends KernelTestCase
         $codes = array_map(static fn ($permission): string => $permission->code(), $role->permissions()->toArray());
         sort($codes);
 
-        self::assertSame(['audit_logs.read', 'node_groups.read', 'nodes.read', 'nodes.update'], $codes);
+        self::assertSame(['audit_logs.read', 'metrics.read', 'node_groups.read', 'nodes.read', 'nodes.update'], $codes);
     }
 
     public function testExpectedDevUsersExistWithHashedPasswords(): void
