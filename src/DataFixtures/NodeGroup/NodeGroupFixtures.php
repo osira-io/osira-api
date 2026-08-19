@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataFixtures\NodeGroup;
 
-use App\Entity\NodeGroup\NodeGroup;
+use App\Service\NodeGroup\Factory\NodeGroupFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -33,8 +33,10 @@ final class NodeGroupFixtures extends Fixture
         ['reference' => self::HOMELAB_REFERENCE, 'name' => 'Homelab', 'description' => 'Personal and experimental nodes outside the managed fleet.'],
     ];
 
-    public function __construct(private readonly Auditor $auditor)
-    {
+    public function __construct(
+        private readonly Auditor $auditor,
+        private readonly NodeGroupFactory $nodeGroupFactory,
+    ) {
     }
 
     public function load(ObjectManager $manager): void
@@ -43,7 +45,7 @@ final class NodeGroupFixtures extends Fixture
 
         $now = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
         foreach (self::GROUPS as $definition) {
-            $group = new NodeGroup($definition['name'], $definition['description'], $now);
+            $group = $this->nodeGroupFactory->create($definition['name'], $definition['description'], $now);
             $manager->persist($group);
             $this->addReference($definition['reference'], $group);
         }

@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Service\Node\Factory;
+
+use App\Service\Node\Factory\NodeFactory;
+use App\Service\Shared\Exception\ResourceValidationException;
+use PHPUnit\Framework\TestCase;
+
+final class NodeFactoryTest extends TestCase
+{
+    public function testCreateNormalizesInitialNodeValues(): void
+    {
+        $factory = new NodeFactory();
+        $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+
+        $node = $factory->create('  srv-prod-01  ', '  Production  ', ' linux ', ' x86_64 ', $now, $now);
+
+        self::assertSame('srv-prod-01', $node->hostname());
+        self::assertSame('Production', $node->displayName());
+        self::assertSame('linux', $node->os());
+        self::assertSame('x86_64', $node->architecture());
+        self::assertSame($now, $node->firstSeenAt());
+        self::assertSame($now, $node->createdAt());
+    }
+
+    public function testCreateRejectsBlankHostname(): void
+    {
+        $factory = new NodeFactory();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->create('  ', null, 'linux', 'x86_64', new \DateTimeImmutable());
+    }
+}

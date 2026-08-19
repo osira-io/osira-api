@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Command\User;
 
 use App\Entity\Rbac\Role;
-use App\Entity\User\User;
 use App\Repository\Rbac\RoleRepository;
 use App\Repository\User\UserRepository;
 use App\Security\Rbac\SystemRole;
 use App\Service\Rbac\RbacCatalogSynchronizer;
+use App\Service\User\Factory\UserFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -34,6 +34,7 @@ final class CreateAdminCommand extends Command
         private readonly ClockInterface $clock,
         private readonly RbacCatalogSynchronizer $catalogSynchronizer,
         private readonly RoleRepository $roleRepository,
+        private readonly UserFactory $userFactory,
     ) {
         parent::__construct();
     }
@@ -72,7 +73,7 @@ final class CreateAdminCommand extends Command
         if (!$superAdminRole instanceof Role) {
             throw new \LogicException('The Super Admin system role is unavailable.');
         }
-        $user = new User($email, ['ROLE_USER'], $now);
+        $user = $this->userFactory->create($email, $now);
         $user->replaceBusinessRoles([$superAdminRole], $now);
         $user->setPasswordHash($this->passwordHasher->hashPassword($user, $password), $now);
 
@@ -98,7 +99,7 @@ final class CreateAdminCommand extends Command
             return null;
         }
 
-        return User::normalizeEmail($email);
+        return $this->userFactory->normalizeEmail($email);
     }
 
     private function readPassword(InputInterface $input, OutputInterface $output): ?string

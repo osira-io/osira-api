@@ -18,6 +18,7 @@ Main technical roots in this repository:
 - `Command`
 - `DataFixtures`
 - `EventSubscriber`
+- `Validator`
 
 ## Placement rules
 
@@ -25,6 +26,7 @@ Main technical roots in this repository:
 - Reads belong in `State/Provider/<Domain>/`.
 - Writes belong in `State/Processor/<Domain>/`.
 - Domain/application logic belongs in `Service/<Domain>/`.
+- Entity factories that are justified by repository convention belong in `Service/<Domain>/Factory/`.
 - Persistence logic stays in Doctrine repositories when query-specific.
 
 ## Static enforcement

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Service\User;
 
 use App\Entity\User\User;
+use App\Service\Shared\Exception\ResourceValidationException;
 use App\Service\Shared\SupportedLocale;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final readonly class CurrentUserManager
 {
@@ -19,7 +19,7 @@ final readonly class CurrentUserManager
     public function updateLocale(User $user, string $locale): User
     {
         if (!SupportedLocale::isSupported($locale)) {
-            throw new UnprocessableEntityHttpException(\sprintf('The locale "%s" is not supported.', $locale));
+            throw new ResourceValidationException(\sprintf('The locale "%s" is not supported.', $locale));
         }
 
         $user->updateLocale($locale, $this->clock->now());

@@ -15,10 +15,14 @@
 - API Platform `4.3.x`
 - Doctrine ORM `3.6.x`
 - DoctrineBundle `3.3.x`
+- Symfony Validator `8.1.x`
+- Symfony Security `8.1.x`
+- Symfony HttpClient `8.1.x`
+- Symfony Console `8.1.x`
+- DoctrineFixturesBundle `4.3.x`
 - PHPUnit `12.5.x`
 - PHPStan `2.2.x`
 - DH AuditorBundle `7.2.x`
-- Symfony HttpClient `8.1.x`
 - PostgreSQL `16` is the target database
 
 ## Mandatory workflow
@@ -35,7 +39,19 @@ Future prompts may be short, for example:
 
 `Implement SLA management in osira-api using the repository conventions.`
 
-The expected agent behavior is to inspect the repo, read `AGENTS.md`, load `osira-api-dev`, consult the relevant references and official docs, apply TDD, update RBAC/audit/OpenAPI/migrations/fixtures when needed, run the quality gates, report the result, and not commit.
+Expected agent behavior:
+
+- inspect the repo
+- read `AGENTS.md`
+- load `osira-api-dev`
+- consult the relevant official docs
+- apply TDD
+- update RBAC if a sensitive capability is added
+- update audit if the state change is business-significant
+- update OpenAPI, migrations, fixtures, and docs when needed
+- run the quality gates
+- report the outcome
+- do not commit
 
 ## Architecture
 
@@ -53,6 +69,7 @@ src/
 ├── Command/<Domain>/
 ├── DataFixtures/<Domain>/
 ├── EventSubscriber/<Domain>/
+├── Validator/<Domain>/
 └── ...
 ```
 
@@ -61,18 +78,23 @@ Examples:
 - `src/Entity/Monitoring/MonitoringTemplate.php` -> `App\Entity\Monitoring\MonitoringTemplate`
 - `src/Service/Monitoring/EffectiveNodeMonitoringResolver.php` -> `App\Service\Monitoring\EffectiveNodeMonitoringResolver`
 
-Use `make architecture` to enforce the static path/namespace convention.
+`make architecture` must stay green.
 
 ## Symfony / API Platform / Doctrine rules
 
 - Prefer constructor injection and explicit typed dependencies.
 - Do not inject `ContainerInterface` or read `$_ENV` directly from application code.
 - Keep API Platform `Provider` classes for reads and `Processor` classes for writes when that matches the feature.
+- Use API Platform `exception_to_status` for HTTP translation when application services throw non-HTTP exceptions.
 - Do not expose Doctrine entities directly only to save classes.
 - Use Symfony Validator constraints for request-shape validation; keep complex invariants in domain/application services.
 - Keep Doctrine mappings explicit, initialize collections in constructors, and maintain owning/inverse sides deliberately.
 - Do not add interfaces, factories, traits, listeners, or subscribers mechanically.
-- Add a factory only when construction has meaningful invariants, service dependencies, or secret/token generation.
+- Entity creation for non-trivial Doctrine resources must follow `Processor / Command -> Service -> Factory -> Entity -> EntityManager/Repository`.
+- Place entity factories under `src/Service/<Domain>/Factory/`.
+- A factory returns a fully initialized new entity and never persists, flushes, authorizes, or maps HTTP.
+- Do not scatter `new Entity(...)` across processors, commands, or application services once a factory exists.
+- Add a factory only when construction has meaningful invariants, service dependencies, clocks, or secret/token generation.
 - Add an interface when it forms a stable boundary, especially for external infrastructure.
 
 ## Timestamps and deletion
@@ -88,7 +110,7 @@ Use `make architecture` to enforce the static path/namespace convention.
 - RBAC checks must use stable permission codes, not translated labels or role names.
 - Never persist or expose raw secrets, token values, password hashes, or credential material.
 - Audit business-significant changes when the resource is already part of the audited surface or when the new capability materially changes system state.
-- Keep `OpenAPI` accurate after API changes.
+- Keep OpenAPI accurate after API changes.
 
 ## Migrations and fixtures
 
@@ -108,6 +130,7 @@ Also run the repo-specific checks that apply to the diff, including when relevan
 
 - `php bin/console doctrine:migrations:migrate --no-interaction`
 - `php bin/console doctrine:schema:validate`
+- `php bin/console doctrine:mapping:info`
 - `php bin/console api:openapi:export --output=var/openapi.json`
 - `php bin/console debug:router`
 - `make test-postgres`

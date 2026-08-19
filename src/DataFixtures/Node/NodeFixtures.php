@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\DataFixtures\Node;
 
 use App\DataFixtures\NodeGroup\NodeGroupFixtures;
-use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
+use App\Service\Node\Factory\NodeFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -104,8 +104,10 @@ final class NodeFixtures extends Fixture implements DependentFixtureInterface
         ],
     ];
 
-    public function __construct(private readonly Auditor $auditor)
-    {
+    public function __construct(
+        private readonly Auditor $auditor,
+        private readonly NodeFactory $nodeFactory,
+    ) {
     }
 
     public function load(ObjectManager $manager): void
@@ -114,7 +116,7 @@ final class NodeFixtures extends Fixture implements DependentFixtureInterface
 
         $now = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
         foreach (self::NODES as $definition) {
-            $node = new Node($definition['hostname'], $definition['displayName'], $definition['os'], $definition['architecture'], $now, $now);
+            $node = $this->nodeFactory->create($definition['hostname'], $definition['displayName'], $definition['os'], $definition['architecture'], $now, $now);
             $node->updateBusinessProperties($definition['displayName'], $definition['environment'], $definition['tags']);
             $node->replaceGroups(array_map(
                 fn (string $reference): NodeGroup => $this->getReference($reference, NodeGroup::class),

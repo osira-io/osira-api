@@ -11,9 +11,9 @@ use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\Node\NodeRepository;
 use App\Repository\NodeGroup\NodeGroupRepository;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class NodeUpdater
@@ -29,12 +29,12 @@ final readonly class NodeUpdater
     public function update(string $id, UpdateNodeInput $input): Node
     {
         if (!Ulid::isValid($id)) {
-            throw new NotFoundHttpException('Node not found.');
+            throw new ResourceNotFoundException('Node not found.');
         }
 
         $node = $this->nodeRepository->find(new Ulid($id));
         if (!$node instanceof Node) {
-            throw new NotFoundHttpException('Node not found.');
+            throw new ResourceNotFoundException('Node not found.');
         }
 
         $displayName = $input->isDisplayNameProvided()
@@ -73,7 +73,7 @@ final readonly class NodeUpdater
     {
         $normalized = self::normalizeNullable($environment);
         if (null !== $normalized && 1 !== preg_match('/^[a-z0-9][a-z0-9._-]*$/i', $normalized)) {
-            throw new UnprocessableEntityHttpException('The environment contains invalid characters.');
+            throw new ResourceValidationException('The environment contains invalid characters.');
         }
 
         return null === $normalized ? null : mb_strtolower($normalized);
@@ -88,10 +88,10 @@ final readonly class NodeUpdater
         foreach ($tags as $tag) {
             $tag = trim($tag);
             if ('' === $tag) {
-                throw new UnprocessableEntityHttpException('Tags cannot contain empty values.');
+                throw new ResourceValidationException('Tags cannot contain empty values.');
             }
             if (mb_strlen($tag) > 64) {
-                throw new UnprocessableEntityHttpException('Tags cannot exceed 64 characters.');
+                throw new ResourceValidationException('Tags cannot exceed 64 characters.');
             }
             if (!\in_array($tag, $normalized, true)) {
                 $normalized[] = $tag;
@@ -99,7 +99,7 @@ final readonly class NodeUpdater
         }
 
         if (\count($normalized) > 50) {
-            throw new UnprocessableEntityHttpException('A node cannot have more than 50 tags.');
+            throw new ResourceValidationException('A node cannot have more than 50 tags.');
         }
 
         return $normalized;
@@ -114,12 +114,12 @@ final readonly class NodeUpdater
         $groups = [];
         foreach ($uniqueIds as $id) {
             if (!Ulid::isValid($id)) {
-                throw new UnprocessableEntityHttpException(\sprintf('Node group "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Node group "%s" does not exist.', $id));
             }
 
             $group = $this->nodeGroupRepository->find(new Ulid($id));
             if (!$group instanceof NodeGroup) {
-                throw new UnprocessableEntityHttpException(\sprintf('Node group "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Node group "%s" does not exist.', $id));
             }
             $groups[] = $group;
         }
@@ -135,12 +135,12 @@ final readonly class NodeUpdater
         $monitoringTemplates = [];
         foreach (array_values(array_unique($ids)) as $id) {
             if (!Ulid::isValid($id)) {
-                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Monitoring template "%s" does not exist.', $id));
             }
 
             $monitoringTemplate = $this->monitoringTemplateRepository->find(new Ulid($id));
             if (!$monitoringTemplate instanceof MonitoringTemplate) {
-                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Monitoring template "%s" does not exist.', $id));
             }
             $monitoringTemplates[] = $monitoringTemplate;
         }

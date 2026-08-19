@@ -11,11 +11,12 @@ use App\Entity\User\User;
 use App\Repository\Rbac\RoleRepository;
 use App\Repository\User\UserRepository;
 use App\Security\Rbac\SystemRole;
+use App\Service\Shared\Exception\ResourceConflictException;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
+use App\Service\User\Factory\UserFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Ulid;
 
@@ -27,15 +28,16 @@ final readonly class UserManager
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private ClockInterface $clock,
+        private UserFactory $userFactory,
     ) {
     }
 
     public function create(CreateUserInput $input): User
     {
-        $email = User::normalizeEmail($input->email);
+        $email = $this->userFactory->normalizeEmail($input->email);
         $this->assertEmailAvailable($email);
         $now = $this->clock->now();
-        $user = new User($email, ['ROLE_USER'], $now);
+        $user = $this->userFactory->create($email, $now);
         $user->replaceBusinessRoles($this->resolveRoles($input->roleIds), $now);
         $user->setPasswordHash($this->passwordHasher->hashPassword($user, $input->password), $now);
         $this->entityManager->persist($user);
@@ -49,14 +51,14 @@ final readonly class UserManager
         $user = $this->find($id);
         $now = $this->clock->now();
         if ($input->isEmailProvided()) {
-            $email = User::normalizeEmail($input->getEmail() ?? '');
+            $email = $this->userFactory->normalizeEmail($input->getEmail() ?? '');
             $this->assertEmailAvailable($email, $user);
             $user->updateEmail($email, $now);
         }
         if ($input->isPasswordProvided()) {
             $password = $input->getPassword();
             if (null === $password) {
-                throw new UnprocessableEntityHttpException('The password cannot be null.');
+                throw new ResourceValidationException('The password cannot be null.');
             }
             $user->setPasswordHash($this->passwordHasher->hashPassword($user, $password), $now);
         }
@@ -74,7 +76,7 @@ final readonly class UserManager
     {
         $user = $this->find($id);
         if ($this->isSuperAdmin($user) && 0 === $this->roles->countSuperAdmins($user->id())) {
-            throw new ConflictHttpException('The last Super Admin cannot be deleted.');
+            throw new ResourceConflictException('The last Super Admin cannot be deleted.');
         }
         $this->entityManager->remove($user);
         $this->entityManager->flush();
@@ -83,11 +85,11 @@ final readonly class UserManager
     private function find(string $id): User
     {
         if (!Ulid::isValid($id)) {
-            throw new NotFoundHttpException('User not found.');
+            throw new ResourceNotFoundException('User not found.');
         }
         $user = $this->users->find(new Ulid($id));
         if (!$user instanceof User) {
-            throw new NotFoundHttpException('User not found.');
+            throw new ResourceNotFoundException('User not found.');
         }
 
         return $user;
@@ -97,7 +99,7 @@ final readonly class UserManager
     {
         $existing = $this->users->findOneByEmail($email);
         if ($existing instanceof User && $existing !== $current) {
-            throw new ConflictHttpException('A user with this email already exists.');
+            throw new ResourceConflictException('A user with this email already exists.');
         }
     }
 
@@ -109,11 +111,11 @@ final readonly class UserManager
         $roles = [];
         foreach (array_values(array_unique($ids)) as $id) {
             if (!Ulid::isValid($id)) {
-                throw new UnprocessableEntityHttpException('An assigned role is invalid.');
+                throw new ResourceValidationException('An assigned role is invalid.');
             }
             $role = $this->roles->find(new Ulid($id));
             if (!$role instanceof Role) {
-                throw new UnprocessableEntityHttpException('An assigned role does not exist.');
+                throw new ResourceValidationException('An assigned role does not exist.');
             }
             $roles[] = $role;
         }
@@ -133,7 +135,7 @@ final readonly class UserManager
             }
         }
         if (0 === $this->roles->countSuperAdmins($user->id())) {
-            throw new ConflictHttpException('The Super Admin role cannot be removed from the last Super Admin.');
+            throw new ResourceConflictException('The Super Admin role cannot be removed from the last Super Admin.');
         }
     }
 

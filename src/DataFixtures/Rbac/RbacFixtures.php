@@ -9,6 +9,7 @@ use App\Entity\Rbac\Role;
 use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
+use App\Service\Rbac\Factory\RoleFactory;
 use App\Service\Rbac\RbacCatalogSynchronizer;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -29,6 +30,7 @@ final class RbacFixtures extends Fixture
         private readonly PermissionRepository $permissions,
         private readonly RoleRepository $roles,
         private readonly Auditor $auditor,
+        private readonly RoleFactory $roleFactory,
     ) {
     }
 
@@ -55,7 +57,7 @@ final class RbacFixtures extends Fixture
 
         $role = $this->roles->findOneBy(['slug' => self::NOC_OPERATOR_ROLE_SLUG]);
         if (!$role instanceof Role) {
-            $role = new Role(
+            $role = $this->roleFactory->create(
                 'NOC Operator',
                 self::NOC_OPERATOR_ROLE_SLUG,
                 'Monitors node health and reviews related audit history across the fleet.',

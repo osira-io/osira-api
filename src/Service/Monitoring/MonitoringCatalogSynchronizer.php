@@ -9,6 +9,8 @@ use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\Monitoring\ItemDefinitionRepository;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
+use App\Service\Monitoring\Factory\ItemDefinitionFactory;
+use App\Service\Monitoring\Factory\MonitoringTemplateFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 
@@ -45,6 +47,8 @@ final readonly class MonitoringCatalogSynchronizer
         private MonitoringTemplateRepository $monitoringTemplates,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private ItemDefinitionFactory $itemDefinitionFactory,
+        private MonitoringTemplateFactory $monitoringTemplateFactory,
     ) {
     }
 
@@ -56,7 +60,7 @@ final readonly class MonitoringCatalogSynchronizer
         foreach (self::ITEM_CATALOG as $key => $definition) {
             $itemDefinition = $this->itemDefinitions->findOneBy(['key' => $key]);
             if (!$itemDefinition instanceof ItemDefinition) {
-                $itemDefinition = new ItemDefinition(
+                $itemDefinition = $this->itemDefinitionFactory->create(
                     $key,
                     $definition['name'],
                     $definition['description'],
@@ -90,7 +94,7 @@ final readonly class MonitoringCatalogSynchronizer
         foreach (self::TEMPLATE_CATALOG as $slug => $definition) {
             $monitoringTemplate = $this->monitoringTemplates->findOneBy(['slug' => $slug]);
             if (!$monitoringTemplate instanceof MonitoringTemplate) {
-                $monitoringTemplate = new MonitoringTemplate($definition['name'], $slug, $definition['description'], true, true, $now);
+                $monitoringTemplate = $this->monitoringTemplateFactory->create($definition['name'], $slug, $definition['description'], true, true, $now);
                 $this->entityManager->persist($monitoringTemplate);
             } else {
                 $monitoringTemplate->synchronize($definition['name'], $definition['description'], true, $now);
