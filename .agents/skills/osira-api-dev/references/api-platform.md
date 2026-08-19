@@ -13,10 +13,11 @@ Use this reference for public API design and API Platform wiring.
 - Use `Processor` classes for mutations.
 - Keep controllers out of the path unless API Platform state providers/processors genuinely do not fit.
 
-## Validation
+## Validation and errors
 
 - Use Symfony Validator constraints for request shape and simple invariants.
 - Keep richer business rules in domain/application services.
+- Prefer `exception_to_status` for mapping application exceptions to HTTP status codes instead of throwing HTTP exceptions from domain/application services.
 
 ## Public API shape
 

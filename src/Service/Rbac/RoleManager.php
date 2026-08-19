@@ -11,26 +11,32 @@ use App\Entity\Rbac\Role;
 use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\SystemRole;
+use App\Service\Rbac\Factory\RoleFactory;
+use App\Service\Shared\Exception\ResourceConflictException;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class RoleManager
 {
-    public function __construct(private RoleRepository $roles, private PermissionRepository $permissions, private EntityManagerInterface $entityManager, private ClockInterface $clock)
-    {
+    public function __construct(
+        private RoleRepository $roles,
+        private PermissionRepository $permissions,
+        private EntityManagerInterface $entityManager,
+        private ClockInterface $clock,
+        private RoleFactory $roleFactory,
+    ) {
     }
 
     public function create(CreateRoleInput $input): Role
     {
-        $name = self::normalizeName($input->name);
-        $slug = self::normalizeSlug($input->slug ?? $name);
+        $name = $this->roleFactory->normalizeName($input->name);
+        $slug = $this->roleFactory->normalizeSlug($input->slug ?? $name);
         $this->assertAvailable($name, $slug);
         $now = $this->clock->now();
-        $role = new Role($name, $slug, self::normalizeDescription($input->description), false, $now);
+        $role = $this->roleFactory->create($name, $slug, $input->description, false, $now);
         $role->replacePermissions($this->resolvePermissions($input->permissionCodes), $now);
         $this->entityManager->persist($role);
         $this->entityManager->flush();
@@ -42,10 +48,10 @@ final readonly class RoleManager
     {
         $role = $this->find($id);
         if (SystemRole::SUPER_ADMIN === $role->slug() && $input->arePermissionCodesProvided()) {
-            throw new ConflictHttpException('The Super Admin role must retain every Osira permission.');
+            throw new ResourceConflictException('The Super Admin role must retain every Osira permission.');
         }
-        $name = $input->isNameProvided() ? self::normalizeName($input->getName() ?? '') : $role->name();
-        $description = $input->isDescriptionProvided() ? self::normalizeDescription($input->getDescription()) : $role->description();
+        $name = $input->isNameProvided() ? $this->roleFactory->normalizeName($input->getName() ?? '') : $role->name();
+        $description = $input->isDescriptionProvided() ? $this->roleFactory->normalizeDescription($input->getDescription()) : $role->description();
         $this->assertAvailable($name, $role->slug(), $role);
         $now = $this->clock->now();
         $role->update($name, $description, $now);
@@ -61,7 +67,7 @@ final readonly class RoleManager
     {
         $role = $this->find($id);
         if ($role->isSystem()) {
-            throw new ConflictHttpException('System roles cannot be deleted.');
+            throw new ResourceConflictException('System roles cannot be deleted.');
         }
         $this->entityManager->remove($role);
         $this->entityManager->flush();
@@ -70,11 +76,11 @@ final readonly class RoleManager
     private function find(string $id): Role
     {
         if (!Ulid::isValid($id)) {
-            throw new NotFoundHttpException('Role not found.');
+            throw new ResourceNotFoundException('Role not found.');
         }
         $role = $this->roles->find(new Ulid($id));
         if (!$role instanceof Role) {
-            throw new NotFoundHttpException('Role not found.');
+            throw new ResourceNotFoundException('Role not found.');
         }
 
         return $role;
@@ -85,7 +91,7 @@ final readonly class RoleManager
         foreach ([['name' => $name], ['slug' => $slug]] as $criteria) {
             $existing = $this->roles->findOneBy($criteria);
             if ($existing instanceof Role && $existing !== $current) {
-                throw new ConflictHttpException('A role with this name or slug already exists.');
+                throw new ResourceConflictException('A role with this name or slug already exists.');
             }
         }
     }
@@ -99,43 +105,11 @@ final readonly class RoleManager
         foreach (array_values(array_unique($codes)) as $code) {
             $permission = $this->permissions->findOneBy(['code' => $code]);
             if (!$permission instanceof Permission) {
-                throw new UnprocessableEntityHttpException(\sprintf('Unknown permission "%s".', $code));
+                throw new ResourceValidationException(\sprintf('Unknown permission "%s".', $code));
             }
             $permissions[] = $permission;
         }
 
         return $permissions;
-    }
-
-    private static function normalizeName(string $name): string
-    {
-        $name = trim($name);
-        if ('' === $name) {
-            throw new UnprocessableEntityHttpException('A role name cannot be empty.');
-        }
-
-        return $name;
-    }
-
-    private static function normalizeSlug(string $slug): string
-    {
-        $slug = mb_strtolower(trim($slug));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '';
-        $slug = trim($slug, '-');
-        if ('' === $slug) {
-            throw new UnprocessableEntityHttpException('A role slug cannot be empty.');
-        }
-
-        return $slug;
-    }
-
-    private static function normalizeDescription(?string $description): ?string
-    {
-        if (null === $description) {
-            return null;
-        }
-        $description = trim($description);
-
-        return '' === $description ? null : $description;
     }
 }

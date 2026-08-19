@@ -9,6 +9,7 @@ use App\Entity\Rbac\Role;
 use App\Entity\User\User;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\SystemRole;
+use App\Service\User\Factory\UserFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -38,6 +39,7 @@ final class UserFixtures extends Fixture implements DependentFixtureInterface
         private readonly RoleRepository $roles,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly Auditor $auditor,
+        private readonly UserFactory $userFactory,
     ) {
     }
 
@@ -50,7 +52,7 @@ final class UserFixtures extends Fixture implements DependentFixtureInterface
             $role = $this->roles->findOneBy(['slug' => $definition['roleSlug']]);
             \assert($role instanceof Role);
 
-            $user = new User($definition['email'], ['ROLE_USER'], $now);
+            $user = $this->userFactory->create($definition['email'], $now);
             $user->replaceBusinessRoles([$role], $now);
             $user->setPasswordHash($this->passwordHasher->hashPassword($user, self::DEV_PASSWORD), $now);
             $manager->persist($user);

@@ -21,10 +21,17 @@ Use this reference for entity, mapping, and persistence decisions.
 - Decide entity by entity based on business rules, uniqueness constraints, and relationship behavior.
 - If there is no demonstrated business need, keep hard delete or business protection rules.
 
+## Transactions
+
+- Use transactions for genuinely multi-entity atomic workflows.
+- Do not open a transaction for simple `persist` / `flush` operations.
+
 ## Factories and construction
 
-- Keep `new Entity(...)` when creation is clear and self-contained.
-- Prefer a dedicated factory or issuer only when creation depends on services, secrets, or non-trivial invariants.
+- In `osira-api`, non-trivial Doctrine entity creation should go through `Service/<Domain>/Factory/<Entity>Factory`.
+- Keep factories focused on construction, normalization, and creation-time invariants only.
+- Do not let factories persist, flush, authorize, or orchestrate use cases.
+- Direct `new Entity(...)` remains acceptable in narrow entity-focused unit tests when it keeps the test simpler.
 
 ## Database work
 

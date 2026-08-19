@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service\Enrollment;
 
-use App\Entity\Agent\Agent;
-use App\Entity\Agent\AgentCredential;
-use App\Entity\Node\Node;
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
+use App\Service\Enrollment\Factory\AgentCredentialFactory;
+use App\Service\Enrollment\Factory\AgentFactory;
+use App\Service\Node\Factory\NodeFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 
@@ -20,6 +20,9 @@ final readonly class AgentEnrollmentService
         private TokenGenerator $tokenGenerator,
         private TokenHasher $tokenHasher,
         private ClockInterface $clock,
+        private NodeFactory $nodeFactory,
+        private AgentFactory $agentFactory,
+        private AgentCredentialFactory $agentCredentialFactory,
     ) {
     }
 
@@ -39,10 +42,10 @@ final readonly class AgentEnrollmentService
         ): EnrollmentResult {
             $now = $this->clock->now();
             $token = $this->tokenVerifier->verifyForUse($enrollmentToken, $now);
-            $node = new Node($hostname, null, $os, $architecture, $now, $now);
-            $agent = new Agent($node, $agentVersion, $now, $now);
+            $node = $this->nodeFactory->create($hostname, null, $os, $architecture, $now, $now);
+            $agent = $this->agentFactory->create($node, $agentVersion, $now, $now);
             $rawAgentToken = $this->tokenGenerator->generateAgentToken();
-            $credential = new AgentCredential($agent, $this->tokenHasher->hash($rawAgentToken), $now, null);
+            $credential = $this->agentCredentialFactory->create($agent, $this->tokenHasher->hash($rawAgentToken), $now, null);
 
             $token->markUsed($now);
             $entityManager->persist($node);

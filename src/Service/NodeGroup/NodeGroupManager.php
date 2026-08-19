@@ -10,11 +10,12 @@ use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\NodeGroup\NodeGroupRepository;
+use App\Service\NodeGroup\Factory\NodeGroupFactory;
+use App\Service\Shared\Exception\ResourceConflictException;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class NodeGroupManager
@@ -24,15 +25,16 @@ final readonly class NodeGroupManager
         private MonitoringTemplateRepository $monitoringTemplateRepository,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private NodeGroupFactory $nodeGroupFactory,
     ) {
     }
 
     public function create(CreateNodeGroupInput $input): NodeGroup
     {
-        $name = self::normalizeName($input->name);
+        $name = $this->nodeGroupFactory->normalizeName($input->name);
         $this->assertNameAvailable($name);
         $now = $this->clock->now();
-        $group = new NodeGroup($name, self::normalizeDescription($input->description), $now);
+        $group = $this->nodeGroupFactory->create($name, $input->description, $now);
         $group->replaceMonitoringTemplates($this->resolveMonitoringTemplates($input->monitoringTemplateIds), $now);
         $this->entityManager->persist($group);
         $this->entityManager->flush();
@@ -43,9 +45,9 @@ final readonly class NodeGroupManager
     public function update(string $id, UpdateNodeGroupInput $input): NodeGroup
     {
         $group = $this->find($id);
-        $name = $input->isNameProvided() ? self::normalizeName($input->getName()) : $group->name();
+        $name = $input->isNameProvided() ? $this->nodeGroupFactory->normalizeName($input->getName()) : $group->name();
         $description = $input->isDescriptionProvided()
-            ? self::normalizeDescription($input->getDescription())
+            ? $this->nodeGroupFactory->normalizeDescription($input->getDescription())
             : $group->description();
 
         $this->assertNameAvailable($name, $group);
@@ -68,11 +70,11 @@ final readonly class NodeGroupManager
     private function find(string $id): NodeGroup
     {
         if (!Ulid::isValid($id)) {
-            throw new NotFoundHttpException('Node group not found.');
+            throw new ResourceNotFoundException('Node group not found.');
         }
         $group = $this->repository->find(new Ulid($id));
         if (!$group instanceof NodeGroup) {
-            throw new NotFoundHttpException('Node group not found.');
+            throw new ResourceNotFoundException('Node group not found.');
         }
 
         return $group;
@@ -82,28 +84,8 @@ final readonly class NodeGroupManager
     {
         $existing = $this->repository->findOneBy(['name' => $name]);
         if ($existing instanceof NodeGroup && $existing !== $current) {
-            throw new ConflictHttpException('A node group with this name already exists.');
+            throw new ResourceConflictException('A node group with this name already exists.');
         }
-    }
-
-    private static function normalizeName(?string $name): string
-    {
-        $name = trim($name ?? '');
-        if ('' === $name) {
-            throw new UnprocessableEntityHttpException('A node group name cannot be empty.');
-        }
-
-        return $name;
-    }
-
-    private static function normalizeDescription(?string $description): ?string
-    {
-        if (null === $description) {
-            return null;
-        }
-        $description = trim($description);
-
-        return '' === $description ? null : $description;
     }
 
     /** @param list<string> $ids
@@ -114,12 +96,12 @@ final readonly class NodeGroupManager
         $monitoringTemplates = [];
         foreach (array_values(array_unique($ids)) as $id) {
             if (!Ulid::isValid($id)) {
-                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Monitoring template "%s" does not exist.', $id));
             }
 
             $monitoringTemplate = $this->monitoringTemplateRepository->find(new Ulid($id));
             if (!$monitoringTemplate instanceof MonitoringTemplate) {
-                throw new UnprocessableEntityHttpException(\sprintf('Monitoring template "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Monitoring template "%s" does not exist.', $id));
             }
             $monitoringTemplates[] = $monitoringTemplate;
         }

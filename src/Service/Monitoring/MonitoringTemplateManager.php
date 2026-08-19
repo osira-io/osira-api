@@ -10,11 +10,12 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\Monitoring\ItemDefinitionRepository;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
+use App\Service\Monitoring\Factory\MonitoringTemplateFactory;
+use App\Service\Shared\Exception\ResourceConflictException;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class MonitoringTemplateManager
@@ -24,16 +25,17 @@ final readonly class MonitoringTemplateManager
         private ItemDefinitionRepository $itemDefinitionRepository,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private MonitoringTemplateFactory $monitoringTemplateFactory,
     ) {
     }
 
     public function create(CreateMonitoringTemplateInput $input): MonitoringTemplate
     {
-        $name = self::normalizeName($input->name);
-        $slug = self::normalizeSlug($input->slug ?? $name);
+        $name = $this->monitoringTemplateFactory->normalizeName($input->name);
+        $slug = $this->monitoringTemplateFactory->normalizeSlug($input->slug ?? $name);
         $this->assertAvailable($name, $slug);
         $now = $this->clock->now();
-        $monitoringTemplate = new MonitoringTemplate($name, $slug, self::normalizeDescription($input->description), false, $input->isEnabled, $now);
+        $monitoringTemplate = $this->monitoringTemplateFactory->create($name, $slug, $input->description, false, $input->isEnabled, $now);
         $monitoringTemplate->replaceItemDefinitions($this->resolveItemDefinitions($input->itemDefinitionIds), $now);
         $this->entityManager->persist($monitoringTemplate);
         $this->entityManager->flush();
@@ -45,12 +47,12 @@ final readonly class MonitoringTemplateManager
     {
         $monitoringTemplate = $this->find($id);
         if ($monitoringTemplate->isSystem()) {
-            throw new ConflictHttpException('System monitoring templates cannot be modified directly.');
+            throw new ResourceConflictException('System monitoring templates cannot be modified directly.');
         }
 
-        $name = $input->isNameProvided() ? self::normalizeName($input->getName() ?? '') : $monitoringTemplate->name();
-        $slug = $input->isSlugProvided() ? self::normalizeSlug($input->getSlug() ?? $name) : $monitoringTemplate->slug();
-        $description = $input->isDescriptionProvided() ? self::normalizeDescription($input->getDescription()) : $monitoringTemplate->description();
+        $name = $input->isNameProvided() ? $this->monitoringTemplateFactory->normalizeName($input->getName() ?? '') : $monitoringTemplate->name();
+        $slug = $input->isSlugProvided() ? $this->monitoringTemplateFactory->normalizeSlug($input->getSlug() ?? $name) : $monitoringTemplate->slug();
+        $description = $input->isDescriptionProvided() ? $this->monitoringTemplateFactory->normalizeDescription($input->getDescription()) : $monitoringTemplate->description();
         $isEnabled = $input->isIsEnabledProvided() ? (bool) $input->getIsEnabled() : $monitoringTemplate->isEnabled();
         $this->assertAvailable($name, $slug, $monitoringTemplate);
         $now = $this->clock->now();
@@ -69,7 +71,7 @@ final readonly class MonitoringTemplateManager
     {
         $monitoringTemplate = $this->find($id);
         if ($monitoringTemplate->isSystem()) {
-            throw new ConflictHttpException('System monitoring templates cannot be deleted.');
+            throw new ResourceConflictException('System monitoring templates cannot be deleted.');
         }
         $this->entityManager->remove($monitoringTemplate);
         $this->entityManager->flush();
@@ -78,11 +80,11 @@ final readonly class MonitoringTemplateManager
     private function find(string $id): MonitoringTemplate
     {
         if (!Ulid::isValid($id)) {
-            throw new NotFoundHttpException('Monitoring template not found.');
+            throw new ResourceNotFoundException('Monitoring template not found.');
         }
         $monitoringTemplate = $this->repository->find(new Ulid($id));
         if (!$monitoringTemplate instanceof MonitoringTemplate) {
-            throw new NotFoundHttpException('Monitoring template not found.');
+            throw new ResourceNotFoundException('Monitoring template not found.');
         }
 
         return $monitoringTemplate;
@@ -93,7 +95,7 @@ final readonly class MonitoringTemplateManager
         foreach ([['name' => $name], ['slug' => $slug]] as $criteria) {
             $existing = $this->repository->findOneBy($criteria);
             if ($existing instanceof MonitoringTemplate && $existing !== $current) {
-                throw new ConflictHttpException('A monitoring template with this name or slug already exists.');
+                throw new ResourceConflictException('A monitoring template with this name or slug already exists.');
             }
         }
     }
@@ -106,47 +108,15 @@ final readonly class MonitoringTemplateManager
         $items = [];
         foreach (array_values(array_unique($ids)) as $id) {
             if (!Ulid::isValid($id)) {
-                throw new UnprocessableEntityHttpException(\sprintf('Item definition "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Item definition "%s" does not exist.', $id));
             }
             $itemDefinition = $this->itemDefinitionRepository->find(new Ulid($id));
             if (!$itemDefinition instanceof ItemDefinition) {
-                throw new UnprocessableEntityHttpException(\sprintf('Item definition "%s" does not exist.', $id));
+                throw new ResourceValidationException(\sprintf('Item definition "%s" does not exist.', $id));
             }
             $items[] = $itemDefinition;
         }
 
         return $items;
-    }
-
-    private static function normalizeName(string $name): string
-    {
-        $name = trim($name);
-        if ('' === $name) {
-            throw new UnprocessableEntityHttpException('A monitoring template name cannot be empty.');
-        }
-
-        return $name;
-    }
-
-    private static function normalizeSlug(string $slug): string
-    {
-        $slug = mb_strtolower(trim($slug));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '';
-        $slug = trim($slug, '-');
-        if ('' === $slug) {
-            throw new UnprocessableEntityHttpException('A monitoring template slug cannot be empty.');
-        }
-
-        return $slug;
-    }
-
-    private static function normalizeDescription(?string $description): ?string
-    {
-        if (null === $description) {
-            return null;
-        }
-        $description = trim($description);
-
-        return '' === $description ? null : $description;
     }
 }

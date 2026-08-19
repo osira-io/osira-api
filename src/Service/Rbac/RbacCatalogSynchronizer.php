@@ -10,6 +10,7 @@ use App\Repository\Rbac\PermissionRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
+use App\Service\Rbac\Factory\RoleFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 
@@ -20,6 +21,7 @@ final readonly class RbacCatalogSynchronizer
         private RoleRepository $roles,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private RoleFactory $roleFactory,
     ) {
     }
 
@@ -41,7 +43,7 @@ final readonly class RbacCatalogSynchronizer
         foreach (SystemRole::catalog() as $slug => $definition) {
             $role = $this->roles->findOneBy(['slug' => $slug]);
             if (!$role instanceof Role) {
-                $role = new Role($definition['name'], $slug, $definition['description'], true, $now);
+                $role = $this->roleFactory->create($definition['name'], $slug, $definition['description'], true, $now);
                 $this->entityManager->persist($role);
             } else {
                 $role->update($definition['name'], $definition['description'], $now);

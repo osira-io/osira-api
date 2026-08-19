@@ -13,12 +13,12 @@ use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Service\Monitoring\ItemDefinitionManager;
 use App\Service\Monitoring\MonitoringTemplateManager;
+use App\Service\Shared\Exception\ResourceConflictException;
+use App\Service\Shared\Exception\ResourceNotFoundException;
+use App\Service\Shared\Exception\ResourceValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Uid\Ulid;
 
 final class MonitoringManagersTest extends KernelTestCase
@@ -68,7 +68,7 @@ final class MonitoringManagersTest extends KernelTestCase
     {
         $item = $this->persistSystemItemDefinition();
 
-        $this->expectException(ConflictHttpException::class);
+        $this->expectException(ResourceConflictException::class);
         $this->itemDefinitionManager->update((string) $item->id(), new UpdateItemDefinitionInput());
     }
 
@@ -76,13 +76,13 @@ final class MonitoringManagersTest extends KernelTestCase
     {
         $item = $this->persistSystemItemDefinition();
 
-        $this->expectException(ConflictHttpException::class);
+        $this->expectException(ResourceConflictException::class);
         $this->itemDefinitionManager->delete((string) $item->id());
     }
 
     public function testItemDefinitionManagerDeleteRejectsInvalidId(): void
     {
-        $this->expectException(NotFoundHttpException::class);
+        $this->expectException(ResourceNotFoundException::class);
         $this->itemDefinitionManager->delete('invalid');
     }
 
@@ -93,13 +93,13 @@ final class MonitoringManagersTest extends KernelTestCase
         $update = new UpdateItemDefinitionInput();
         $update->setKey('SYSTEM.CPU.USAGE');
 
-        $this->expectException(ConflictHttpException::class);
+        $this->expectException(ResourceConflictException::class);
         $this->itemDefinitionManager->update((string) $other->id(), $update);
     }
 
     public function testItemDefinitionManagerCreateRejectsInvalidInput(): void
     {
-        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectException(ResourceValidationException::class);
         $this->itemDefinitionManager->create($this->createItemDefinitionInput('invalid key', 'Invalid'));
     }
 
@@ -127,13 +127,13 @@ final class MonitoringManagersTest extends KernelTestCase
     {
         $template = $this->persistSystemMonitoringTemplate();
 
-        $this->expectException(ConflictHttpException::class);
+        $this->expectException(ResourceConflictException::class);
         $this->monitoringTemplateManager->update((string) $template->id(), new UpdateMonitoringTemplateInput());
     }
 
     public function testMonitoringTemplateManagerDeleteRejectsInvalidId(): void
     {
-        $this->expectException(NotFoundHttpException::class);
+        $this->expectException(ResourceNotFoundException::class);
         $this->monitoringTemplateManager->delete('invalid');
     }
 
@@ -146,7 +146,7 @@ final class MonitoringManagersTest extends KernelTestCase
         $input->setSlug('linux-core');
         $input->setItemDefinitionIds([(string) new Ulid()]);
 
-        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectException(ResourceValidationException::class);
         $this->monitoringTemplateManager->update((string) $template->id(), $input);
     }
 

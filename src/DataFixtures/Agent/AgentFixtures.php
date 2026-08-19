@@ -8,6 +8,7 @@ use App\DataFixtures\Node\NodeFixtures;
 use App\Entity\Agent\Agent;
 use App\Entity\Node\Node;
 use App\Repository\Node\NodeRepository;
+use App\Service\Enrollment\Factory\AgentFactory;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -46,6 +47,7 @@ final class AgentFixtures extends Fixture implements DependentFixtureInterface
     public function __construct(
         private readonly NodeRepository $nodes,
         private readonly Auditor $auditor,
+        private readonly AgentFactory $agentFactory,
     ) {
     }
 
@@ -57,7 +59,7 @@ final class AgentFixtures extends Fixture implements DependentFixtureInterface
         foreach (self::LINUX_NODE_HOSTNAMES as $hostname) {
             $node = $this->nodes->findOneBy(['hostname' => $hostname]);
             \assert($node instanceof Node);
-            $manager->persist(new Agent($node, self::AGENT_VERSION, $now, $now));
+            $manager->persist($this->agentFactory->create($node, self::AGENT_VERSION, $now, $now));
         }
         $manager->flush();
 

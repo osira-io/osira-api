@@ -16,6 +16,14 @@ api_platform:
     mapping:
         paths:
             - '%kernel.project_dir%/src/Dto'
+    exception_to_status:
+        Symfony\Component\Serializer\Exception\ExceptionInterface: 400
+        ApiPlatform\Exception\InvalidArgumentException: 400
+        ApiPlatform\Exception\FilterValidationException: 400
+        Doctrine\ORM\OptimisticLockException: 409
+        App\Service\Shared\Exception\ResourceNotFoundException: 404
+        App\Service\Shared\Exception\ResourceConflictException: 409
+        App\Service\Shared\Exception\ResourceValidationException: 422
     defaults:
         stateless: true
         pagination_client_enabled: false
