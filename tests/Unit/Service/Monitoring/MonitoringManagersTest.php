@@ -80,28 +80,25 @@ final class MonitoringManagersTest extends KernelTestCase
         $this->itemDefinitionManager->delete((string) $item->id());
     }
 
-    public function testItemDefinitionManagerRejectsInvalidIdsDuplicateKeysAndInvalidInput(): void
+    public function testItemDefinitionManagerDeleteRejectsInvalidId(): void
+    {
+        $this->expectException(NotFoundHttpException::class);
+        $this->itemDefinitionManager->delete('invalid');
+    }
+
+    public function testItemDefinitionManagerUpdateRejectsDuplicateKeys(): void
     {
         $this->itemDefinitionManager->create($this->createItemDefinitionInput('system.cpu.usage', 'CPU usage'));
         $other = $this->itemDefinitionManager->create($this->createItemDefinitionInput('custom.check.latency', 'Latency'));
-
-        try {
-            $this->itemDefinitionManager->delete('invalid');
-            self::fail('Expected invalid IDs to be rejected.');
-        } catch (NotFoundHttpException) {
-            self::assertTrue(true);
-        }
-
         $update = new UpdateItemDefinitionInput();
         $update->setKey('SYSTEM.CPU.USAGE');
 
-        try {
-            $this->itemDefinitionManager->update((string) $other->id(), $update);
-            self::fail('Expected duplicate keys to be rejected.');
-        } catch (ConflictHttpException) {
-            self::assertTrue(true);
-        }
+        $this->expectException(ConflictHttpException::class);
+        $this->itemDefinitionManager->update((string) $other->id(), $update);
+    }
 
+    public function testItemDefinitionManagerCreateRejectsInvalidInput(): void
+    {
         $this->expectException(UnprocessableEntityHttpException::class);
         $this->itemDefinitionManager->create($this->createItemDefinitionInput('invalid key', 'Invalid'));
     }

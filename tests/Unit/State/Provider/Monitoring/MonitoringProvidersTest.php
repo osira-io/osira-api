@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\Get;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
+use App\Repository\Monitoring\ItemDefinitionRepository;
+use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Service\Monitoring\ItemDefinitionOutputFactory;
 use App\Service\Monitoring\MonitoringTemplateOutputFactory;
 use App\State\Provider\Monitoring\ItemDefinitionProvider;
@@ -35,7 +37,7 @@ final class MonitoringProvidersTest extends KernelTestCase
     public function testItemDefinitionProviderReturnsNullForInvalidOrMissingIds(): void
     {
         $provider = new ItemDefinitionProvider(
-            $this->entityManager->getRepository(ItemDefinition::class),
+            self::getContainer()->get(ItemDefinitionRepository::class),
             new ItemDefinitionOutputFactory(),
         );
 
@@ -51,7 +53,7 @@ final class MonitoringProvidersTest extends KernelTestCase
         $this->entityManager->flush();
 
         $provider = new ItemDefinitionProvider(
-            $this->entityManager->getRepository(ItemDefinition::class),
+            self::getContainer()->get(ItemDefinitionRepository::class),
             new ItemDefinitionOutputFactory(),
         );
         $output = $provider->provide(new Get(), ['id' => (string) $item->id()]);
@@ -63,7 +65,7 @@ final class MonitoringProvidersTest extends KernelTestCase
     public function testMonitoringTemplateProviderReturnsNullForInvalidOrMissingIds(): void
     {
         $provider = new MonitoringTemplateProvider(
-            $this->entityManager->getRepository(MonitoringTemplate::class),
+            self::getContainer()->get(MonitoringTemplateRepository::class),
             new MonitoringTemplateOutputFactory(new ItemDefinitionOutputFactory()),
         );
 
@@ -79,7 +81,7 @@ final class MonitoringProvidersTest extends KernelTestCase
         $this->entityManager->flush();
 
         $provider = new MonitoringTemplateProvider(
-            $this->entityManager->getRepository(MonitoringTemplate::class),
+            self::getContainer()->get(MonitoringTemplateRepository::class),
             new MonitoringTemplateOutputFactory(new ItemDefinitionOutputFactory()),
         );
         $output = $provider->provide(new Get(), ['id' => (string) $template->id()]);
