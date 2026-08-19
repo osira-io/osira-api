@@ -56,6 +56,7 @@ $enforcedRoots = [
     'Dto',
     'Entity',
     'EventSubscriber',
+    'Factory',
     'Repository',
     'Security',
     'Service',

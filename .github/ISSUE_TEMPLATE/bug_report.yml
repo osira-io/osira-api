@@ -21,7 +21,7 @@ body:
     attributes:
       label: Environment
       description: Include PHP version, operating system, and installation method.
-      placeholder: PHP 8.4, Debian 13, Composer install
+      placeholder: PHP 8.5.3, Debian 13, Composer install
     validations:
       required: true
   - type: textarea

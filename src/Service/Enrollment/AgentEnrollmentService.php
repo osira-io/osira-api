@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service\Enrollment;
 
+use App\Factory\Enrollment\AgentCredentialFactory;
+use App\Factory\Enrollment\AgentFactory;
+use App\Factory\Node\NodeFactory;
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
-use App\Service\Enrollment\Factory\AgentCredentialFactory;
-use App\Service\Enrollment\Factory\AgentFactory;
-use App\Service\Node\Factory\NodeFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 

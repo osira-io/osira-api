@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Rbac\Factory;
+namespace App\Factory\Rbac;
 
 use App\Entity\Rbac\Role;
 use App\Service\Shared\Exception\ResourceValidationException;

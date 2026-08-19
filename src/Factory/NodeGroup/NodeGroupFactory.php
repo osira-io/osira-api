@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\NodeGroup\Factory;
+namespace App\Factory\NodeGroup;
 
 use App\Entity\NodeGroup\NodeGroup;
 use App\Service\Shared\Exception\ResourceValidationException;

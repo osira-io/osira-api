@@ -3,7 +3,7 @@
 [![CI](https://github.com/osira-io/osira-api/actions/workflows/ci.yml/badge.svg)](https://github.com/osira-io/osira-api/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/osira-io/osira-api/branch/develop/graph/badge.svg)](https://codecov.io/gh/osira-io/osira-api)
 [![PHPStan level max](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](https://phpstan.org/)
-[![PHP 8.4+](https://img.shields.io/badge/PHP-8.4%2B-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
+[![PHP 8.5.3+](https://img.shields.io/badge/PHP-8.5.3%2B-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
 [![Symfony 8.1](https://img.shields.io/badge/Symfony-8.1-000000.svg?logo=symfony&logoColor=white)](https://symfony.com/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
@@ -26,7 +26,7 @@ are intentionally outside this repository's current scope.
 - GNU Make
 - Docker with Compose
 
-PHP 8.4, Composer, PostgreSQL and FrankenPHP are provided by the development
+PHP 8.5.3, Composer, PostgreSQL and FrankenPHP are provided by the development
 stack. A compatible local PHP installation remains useful for quality checks,
 but is not required to start Osira.
 

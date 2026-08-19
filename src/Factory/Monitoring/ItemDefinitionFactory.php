@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Monitoring\Factory;
+namespace App\Factory\Monitoring;
 
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;

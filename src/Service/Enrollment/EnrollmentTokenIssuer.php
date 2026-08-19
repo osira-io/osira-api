@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service\Enrollment;
 
+use App\Factory\Enrollment\EnrollmentTokenFactory;
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
-use App\Service\Enrollment\Factory\EnrollmentTokenFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 
