@@ -10,7 +10,7 @@
 
 ## Installed stack
 
-- PHP `8.5.9` locally; project constraint `>=8.4`
+- PHP `8.5.9` locally; project constraint `>=8.5.3`
 - Symfony `8.1.x`
 - API Platform `4.3.x`
 - Doctrine ORM `3.6.x`

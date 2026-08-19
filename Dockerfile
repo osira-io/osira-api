@@ -2,7 +2,7 @@
 
 FROM composer:2 AS composer
 
-FROM dunglas/frankenphp:1.12.6-php8.4-alpine
+FROM dunglas/frankenphp:1.12.6-php8.5-alpine
 
 RUN install-php-extensions \
     intl \

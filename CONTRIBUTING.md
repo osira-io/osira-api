@@ -14,7 +14,7 @@ documentation, tests, bug reports, and design feedback are welcome.
 
 ## Local setup
 
-You need PHP 8.4 or newer, Composer, and GNU Make. Docker is optional, but is
+You need PHP 8.5.3 or newer, Composer, and GNU Make. Docker is optional, but is
 required to run the complete local CI target.
 
 ```bash
