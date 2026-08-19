@@ -100,6 +100,7 @@ be deleted or have the role removed.
 | Access control | `roles.read`, `roles.create`, `roles.update`, `roles.delete`, `permissions.read` |
 | Nodes | `nodes.read`, `nodes.update` |
 | Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
+| Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `metrics.read` |
 | Enrollment | `enrollment_tokens.create` |
 | Audit | `audit_logs.read` |
 
@@ -109,8 +110,8 @@ The initial system roles are:
 | --- | --- |
 | Super Admin | Every permission; protected and non-deletable |
 | Admin | Every permission |
-| Operator | Node read/update and full node-group management |
-| Viewer | `nodes.read` and `node_groups.read` |
+| Operator | Node read/update, full node-group management, and `metrics.read` |
+| Viewer | `nodes.read`, `node_groups.read`, and `metrics.read` |
 
 All system roles are non-deletable. Admin, Operator, and Viewer permission
 mappings may be adjusted through `PATCH /api/roles/{id}`; running
@@ -247,6 +248,72 @@ Production
 Groups are available under `/api/node-groups`. They are intended to support
 shared templates and configuration later; templates and inheritance are not
 implemented yet.
+
+## Monitoring metrics read API
+
+Osira reads stored metrics through Symfony and never lets the frontend talk
+directly to VictoriaMetrics. The API currently exposes three read-only metrics
+endpoints:
+
+- `GET /api/metrics/query`
+- `GET /api/metrics/query-range`
+- `GET /api/nodes/{id}/metrics`
+
+The two `/api/metrics/*` endpoints require a known Osira `itemKey` and a
+concrete `nodeId`. They do not accept arbitrary MetricsQL. Osira resolves the
+`ItemDefinition`, checks that it is enabled and effectively assigned to the
+target Node, maps it to a VictoriaMetrics selector, executes the read, then
+returns a stable Osira JSON contract.
+
+The public instant-query contract is:
+
+```json
+{
+  "nodeId": "01K...",
+  "itemKey": "system.cpu.usage",
+  "samples": [
+    {
+      "metricKey": "system.cpu.usage",
+      "labels": {"device": "cpu0"},
+      "timestamp": "2026-08-19T12:00:00+00:00",
+      "value": "42.5"
+    }
+  ]
+}
+```
+
+The public range-query contract is:
+
+```json
+{
+  "nodeId": "01K...",
+  "itemKey": "system.disk.usage",
+  "series": [
+    {
+      "metricKey": "system.disk.usage",
+      "labels": {"device": "nvme0n1p1"},
+      "points": [
+        {"timestamp": "2026-08-19T12:00:00+00:00", "value": "77.1"},
+        {"timestamp": "2026-08-19T12:01:00+00:00", "value": "77.4"}
+      ]
+    }
+  ]
+}
+```
+
+`GET /api/nodes/{id}/metrics` is the node-centric snapshot endpoint. It returns
+the current values of every enabled `ItemDefinition` that is effectively applied
+to that Node through direct template assignment and/or inherited `NodeGroup`
+templates.
+
+VictoriaMetrics connectivity is configured by environment variables:
+
+- `VICTORIAMETRICS_URL`
+- `VICTORIAMETRICS_TIMEOUT`
+
+The development Compose stack includes a local VictoriaMetrics container on
+`http://localhost:8428`. This is for development and testing only; the API
+still acts strictly as the control-plane read proxy.
 
 Node and node-group collections are paginated with `page` and `itemsPerPage`
 (25 items by default, 100 maximum). Collection responses expose the records in

@@ -12,12 +12,16 @@ services:
       JWT_SECRET_KEY: /app/config/jwt/private.pem
       JWT_PUBLIC_KEY: /app/config/jwt/public.pem
       JWT_PASSPHRASE: ${JWT_PASSPHRASE:-change-me-in-env-local}
+      VICTORIAMETRICS_URL: ${VICTORIAMETRICS_URL:-http://victoriametrics:8428}
+      VICTORIAMETRICS_TIMEOUT: ${VICTORIAMETRICS_TIMEOUT:-5}
       SERVER_NAME: ${SERVER_NAME:-:80}
       SERVER_ROOT: /app/public
       FRANKENPHP_CONFIG: ""
     depends_on:
       database:
         condition: service_healthy
+      victoriametrics:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost/api/docs"]
       interval: 10s
@@ -53,8 +57,19 @@ services:
       - "5432:5432"
 ###< doctrine/doctrine-bundle ###
 
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.128.0
+    command:
+      - --storageDataPath=/victoria-metrics-data
+    restart: "no"
+    ports:
+      - "8428:8428"
+    volumes:
+      - victoriametrics_data:/victoria-metrics-data
+
 volumes:
   development_vendor:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###
+  victoriametrics_data:

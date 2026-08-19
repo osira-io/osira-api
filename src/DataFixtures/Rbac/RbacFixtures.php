@@ -44,6 +44,7 @@ final class RbacFixtures extends Fixture
             PermissionCode::NODES_UPDATE,
             PermissionCode::NODE_GROUPS_READ,
             PermissionCode::AUDIT_LOGS_READ,
+            PermissionCode::METRICS_READ,
         ];
         $permissions = array_map(function (string $code): Permission {
             $permission = $this->permissions->findOneBy(['code' => $code]);

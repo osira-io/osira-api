@@ -8,6 +8,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     osira.enrollment_token_ttl: 900
+    osira.victoriametrics_url: '%env(VICTORIAMETRICS_URL)%'
+    osira.victoriametrics_timeout: '%env(float:VICTORIAMETRICS_TIMEOUT)%'
 
 services:
     # default configuration for services in *this* file
@@ -27,6 +29,19 @@ services:
     App\Security\Auth\TokenHasher:
         arguments:
             $pepper: '%kernel.secret%'
+
+    App\Service\Metrics\VictoriaMetricsClientInterface:
+        alias: App\Service\Metrics\VictoriaMetricsClientProxy
+
+    App\Service\Metrics\VictoriaMetricsClientProxy:
+        arguments:
+            $inner: '@App\Service\Metrics\VictoriaMetricsHttpClient'
+
+    App\Service\Metrics\VictoriaMetricsHttpClient:
+        arguments:
+            $httpClient: '@http_client'
+            $baseUrl: '%osira.victoriametrics_url%'
+            $timeoutSeconds: '%osira.victoriametrics_timeout%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

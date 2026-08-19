@@ -8,6 +8,8 @@
     <env name="JWT_SECRET_KEY" value="%kernel.project_dir%/var/jwt/test-private.pem" force="true"/>
     <env name="JWT_PUBLIC_KEY" value="%kernel.project_dir%/var/jwt/test-public.pem" force="true"/>
     <env name="JWT_PASSPHRASE" value="osira-test-passphrase" force="true"/>
+    <env name="VICTORIAMETRICS_URL" value="http://victoriametrics:8428" force="true"/>
+    <env name="VICTORIAMETRICS_TIMEOUT" value="5" force="true"/>
     <env name="SHELL_VERBOSITY" value="-1"/>
   </php>
   <testsuites>
