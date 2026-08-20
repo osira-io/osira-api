@@ -222,12 +222,13 @@ final class AuditLogTest extends ApiTestCase
         self::assertStringNotContainsString($rawToken, $encodedEnrollmentAudits);
 
         $schemaManager = $this->entityManager()->getConnection()->createSchemaManager();
-        self::assertFalse($schemaManager->tablesExist(['audit_agent_credentials']));
-        foreach (['audit_users', 'audit_enrollment_tokens'] as $table) {
+        self::assertTrue($schemaManager->tablesExist(['audit_agent_credentials']));
+        foreach (['audit_users', 'audit_enrollment_tokens', 'audit_agent_credentials'] as $table) {
             $storedDiffs = $this->entityManager()->getConnection()->fetchFirstColumn('SELECT diffs FROM '.$table);
             $encodedDiffs = json_encode($storedDiffs, \JSON_THROW_ON_ERROR);
             self::assertStringNotContainsString('password', strtolower($encodedDiffs));
             self::assertStringNotContainsString('tokenhash', strtolower($encodedDiffs));
+            self::assertStringNotContainsString('secrethash', strtolower($encodedDiffs));
             self::assertStringNotContainsString($rawToken, $encodedDiffs);
         }
     }

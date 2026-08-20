@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Audit;
 
 use App\Entity\Agent\Agent;
+use App\Entity\Agent\AgentCredential;
 use App\Entity\Enrollment\EnrollmentToken;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
@@ -16,7 +17,7 @@ use App\Entity\User\User;
 
 final class AuditEntityCatalog
 {
-    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'Agent', 'EnrollmentToken'];
+    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'Agent', 'AgentCredential', 'EnrollmentToken'];
 
     /** @var array<string, class-string> */
     public const array ENTITIES = [
@@ -28,6 +29,7 @@ final class AuditEntityCatalog
         'MonitoringTemplate' => MonitoringTemplate::class,
         'ItemDefinition' => ItemDefinition::class,
         'Agent' => Agent::class,
+        'AgentCredential' => AgentCredential::class,
         'EnrollmentToken' => EnrollmentToken::class,
     ];
 
@@ -46,6 +48,7 @@ final class AuditEntityCatalog
         'MonitoringTemplate' => 'audit_monitoring_templates',
         'ItemDefinition' => 'audit_item_definitions',
         'Agent' => 'audit_agents',
+        'AgentCredential' => 'audit_agent_credentials',
         'EnrollmentToken' => 'audit_enrollment_tokens',
     ];
 

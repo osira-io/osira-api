@@ -35,6 +35,9 @@ api_platform:
             JWT:
                 scheme: bearer
                 bearerFormat: JWT
+            AgentBearer:
+                scheme: bearer
+                bearerFormat: osi_agent
         swagger_ui_extra_configuration:
             docExpansion: list
             displayRequestDuration: true

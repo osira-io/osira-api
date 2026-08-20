@@ -25,6 +25,11 @@ security:
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+        agent:
+            pattern: ^/api/agent(?:/|$)
+            stateless: true
+            custom_authenticators:
+                - App\Security\Agent\AgentBearerAuthenticator
         api:
             pattern: ^/api
             stateless: true
@@ -36,6 +41,7 @@ security:
         - { path: ^/api/auth/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/agents/enroll$, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/agent(?:/|$), roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

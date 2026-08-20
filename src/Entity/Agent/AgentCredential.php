@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Entity\Agent;
 
+use App\Repository\Agent\AgentCredentialRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UlidType;
 use Symfony\Component\Uid\Ulid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AgentCredentialRepository::class)]
 #[ORM\Table(name: 'agent_credentials')]
 #[ORM\Index(columns: ['agent_id'], name: 'idx_agent_credentials_agent')]
+#[ORM\UniqueConstraint(name: 'uniq_agent_credentials_secret_hash', columns: ['secret_hash'])]
 final class AgentCredential
 {
     #[ORM\Id]
@@ -72,9 +74,24 @@ final class AgentCredential
         return $this->revokedAt;
     }
 
+    public function isRevoked(): bool
+    {
+        return null !== $this->revokedAt;
+    }
+
     public function expiresAt(): ?\DateTimeImmutable
     {
         return $this->expiresAt;
+    }
+
+    public function isExpiredAt(\DateTimeImmutable $now): bool
+    {
+        return null !== $this->expiresAt && $this->expiresAt <= $now;
+    }
+
+    public function isActiveAt(\DateTimeImmutable $now): bool
+    {
+        return !$this->isRevoked() && !$this->isExpiredAt($now);
     }
 
     public function revoke(\DateTimeImmutable $revokedAt): void

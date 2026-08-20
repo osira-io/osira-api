@@ -32,6 +32,7 @@ final class PermissionCode
     public const string ITEM_DEFINITIONS_UPDATE = 'item_definitions.update';
     public const string ITEM_DEFINITIONS_DELETE = 'item_definitions.delete';
     public const string METRICS_READ = 'metrics.read';
+    public const string AGENT_CREDENTIALS_REVOKE = 'agent_credentials.revoke';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -63,6 +64,7 @@ final class PermissionCode
             self::ITEM_DEFINITIONS_UPDATE => self::entry('Update item definitions', 'Update item definitions.', 'Monitoring'),
             self::ITEM_DEFINITIONS_DELETE => self::entry('Delete item definitions', 'Delete non-system item definitions.', 'Monitoring'),
             self::METRICS_READ => self::entry('Read metrics', 'Read VictoriaMetrics-backed metric values through the Osira API.', 'Monitoring'),
+            self::AGENT_CREDENTIALS_REVOKE => self::entry('Revoke agent credentials', 'Revoke active control-plane agent credentials.', 'Enrollment'),
         ];
     }
 
