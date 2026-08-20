@@ -21,6 +21,9 @@ dh_auditor:
                 App\Entity\Monitoring\MonitoringTemplate: ~
                 App\Entity\Monitoring\ItemDefinition: ~
                 App\Entity\Agent\Agent: ~
+                App\Entity\Agent\AgentCredential:
+                    ignored_columns:
+                        - secretHash
                 App\Entity\Enrollment\EnrollmentToken:
                     ignored_columns:
                         - tokenHash

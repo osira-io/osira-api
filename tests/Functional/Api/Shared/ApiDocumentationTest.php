@@ -55,6 +55,9 @@ final class ApiDocumentationTest extends ApiTestCase
         $metricInstantPath = self::objectAt($paths, '/api/metrics/query');
         $metricRangePath = self::objectAt($paths, '/api/metrics/query-range');
         $nodeMetricsPath = self::objectAt($paths, '/api/nodes/{id}/metrics');
+        $agentConfigPath = self::objectAt($paths, '/api/agent/config');
+        $agentCredentialRotatePath = self::objectAt($paths, '/api/agent/credentials/rotate');
+        $agentCredentialRevokePath = self::objectAt($paths, '/api/agent-credentials/{id}/revoke');
 
         self::assertArrayHasKey('patch', $nodePath);
         self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
@@ -80,6 +83,9 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $metricInstantPath);
         self::assertArrayHasKey('get', $metricRangePath);
         self::assertArrayHasKey('get', $nodeMetricsPath);
+        self::assertArrayHasKey('get', $agentConfigPath);
+        self::assertArrayHasKey('post', $agentCredentialRotatePath);
+        self::assertArrayHasKey('post', $agentCredentialRevokePath);
 
         $components = self::objectAt($document, 'components');
         $schemas = self::objectAt($components, 'schemas');
@@ -132,6 +138,8 @@ final class ApiDocumentationTest extends ApiTestCase
             'Metric',
             'EnrollmentToken',
             'AgentEnrollment',
+            'AgentConfig',
+            'AgentCredential',
             'Audit',
         ], $names);
     }

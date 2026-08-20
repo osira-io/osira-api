@@ -110,6 +110,9 @@ Examples:
 - Any sensitive new API capability needs a dedicated RBAC permission.
 - RBAC checks must use stable permission codes, not translated labels or role names.
 - Never persist or expose raw secrets, token values, password hashes, or credential material.
+- Control-plane Agent API endpoints must authenticate with dedicated `AgentCredential` bearer secrets (`osi_agent_*`), never with the user JWT.
+- The enrollment contract is `EnrollmentToken -> Symfony enrollment -> AgentCredential -> /api/agent/config`; keep the raw agent secret one-time only and store only its hash.
+- Future data-plane metric ingestion is separate from the control-plane credential and must not be coupled to the Symfony user auth path.
 - Audit business-significant changes when the resource is already part of the audited surface or when the new capability materially changes system state.
 - Keep OpenAPI accurate after API changes.
 
