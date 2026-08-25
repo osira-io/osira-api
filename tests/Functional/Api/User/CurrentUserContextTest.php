@@ -63,6 +63,7 @@ final class CurrentUserContextTest extends ApiTestCase
 
         $permissions = self::stringList($context, 'permissions');
         $expected = [
+            PermissionCode::INCIDENTS_READ,
             PermissionCode::METRICS_READ,
             PermissionCode::NODES_READ,
             PermissionCode::NODES_UPDATE,

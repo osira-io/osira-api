@@ -100,7 +100,7 @@ be deleted or have the role removed.
 | Access control | `roles.read`, `roles.create`, `roles.update`, `roles.delete`, `permissions.read` |
 | Nodes | `nodes.read`, `nodes.update` |
 | Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
-| Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `metrics.read` |
+| Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `metrics.read`, `incidents.read` |
 | Enrollment | `enrollment_tokens.create` |
 | Audit | `audit_logs.read` |
 
@@ -110,8 +110,8 @@ The initial system roles are:
 | --- | --- |
 | Super Admin | Every permission; protected and non-deletable |
 | Admin | Every permission |
-| Operator | Node read/update, full node-group management, and `metrics.read` |
-| Viewer | `nodes.read`, `node_groups.read`, and `metrics.read` |
+| Operator | Node read/update, full node-group management, `metrics.read`, and `incidents.read` |
+| Viewer | `nodes.read`, `node_groups.read`, `metrics.read`, and `incidents.read` |
 
 All system roles are non-deletable. Admin, Operator, and Viewer permission
 mappings may be adjusted through `PATCH /api/roles/{id}`; running
@@ -338,6 +338,42 @@ plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
 `POST /api/agents/enroll` therefore intentionally remains public at the user
 authentication layer.
+
+## Alert evaluation and incidents
+
+Alert evaluation runs only on the server. `osira:alerts:evaluate` and the
+`scheduler_alerts` worker both delegate to the same batch service; the scheduler
+frequency is configured with `ALERT_EVALUATION_INTERVAL_SECONDS` (60 seconds by
+default). Run the periodic worker with:
+
+```bash
+php bin/console messenger:consume scheduler_alerts
+```
+
+For every Node, the engine uses only rules returned by
+`EffectiveNodeMonitoringResolver::getEffectiveAlertRules()`. It groups those
+rules by ItemDefinition and reads their required ranges from the existing
+VictoriaMetrics client. User-provided MetricsQL is never accepted.
+
+V1 `requiredOccurrences` means the number of samples satisfying the trigger
+comparison within the inclusive `evaluationWindowSeconds` interval ending at
+evaluation time. Each VictoriaMetrics dimension series is evaluated separately.
+The incident identity is a SHA-256 key over Node ULID, AlertRule ULID, and sorted
+public dimension labels, so devices, interfaces, and containers never collapse
+into one incident.
+
+An active incident recovers from `gt`/`gte` only below its recovery threshold,
+and from `lt`/`lte` only above it. Equality operators use their logical inverse.
+Without a recovery threshold, the trigger operator's logical inverse is used.
+The boundary is deliberately strict when a recovery threshold exists, providing
+hysteresis (for example, `gt 90`, recovery `80`, resolves only below 80).
+`NO_DATA`, timeouts, unavailable backends, invalid responses, and invalid value
+comparisons never resolve an active incident. PostgreSQL stores only incident
+state and the latest observed value; metric samples remain in VictoriaMetrics.
+
+The read-only API exposes `GET /api/incidents` and `GET /api/incidents/{id}` to
+holders of `incidents.read`. Collection filters are `status`, `severity`,
+`node`, `alertRule`, and `date` (first trigger at or after the timestamp).
 
 ## Development checks
 

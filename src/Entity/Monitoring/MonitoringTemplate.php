@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity\Monitoring;
 
+use App\Entity\Alert\AlertRule;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
@@ -60,6 +61,10 @@ final class MonitoringTemplate
     #[ORM\ManyToMany(targetEntity: NodeGroup::class, mappedBy: 'monitoringTemplates')]
     private Collection $nodeGroups;
 
+    /** @var Collection<int, AlertRule> */
+    #[ORM\ManyToMany(targetEntity: AlertRule::class, mappedBy: 'assignedTemplates')]
+    private Collection $alertRules;
+
     public function __construct(
         string $name,
         string $slug,
@@ -79,6 +84,7 @@ final class MonitoringTemplate
         $this->itemDefinitions = new ArrayCollection();
         $this->nodes = new ArrayCollection();
         $this->nodeGroups = new ArrayCollection();
+        $this->alertRules = new ArrayCollection();
     }
 
     public function update(string $name, string $slug, ?string $description, bool $isEnabled, \DateTimeImmutable $now): void
@@ -166,6 +172,19 @@ final class MonitoringTemplate
     public function nodeGroups(): Collection
     {
         return $this->nodeGroups;
+    }
+
+    /** @return Collection<int, AlertRule> */
+    public function alertRules(): Collection
+    {
+        return $this->alertRules;
+    }
+
+    public function addAlertRule(AlertRule $alertRule): void
+    {
+        if (!$this->alertRules->contains($alertRule)) {
+            $this->alertRules->add($alertRule);
+        }
     }
 
     public function addNode(Node $node): void

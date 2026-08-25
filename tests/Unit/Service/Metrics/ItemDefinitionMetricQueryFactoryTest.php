@@ -53,4 +53,21 @@ final class ItemDefinitionMetricQueryFactoryTest extends TestCase
             new MetricLabelFilters(interface: 'eth0'),
         );
     }
+
+    public function testKeepsOnlyMappedDimensionLabelsForIncidentIdentity(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
+        $item = new ItemDefinition('container.network.rx', 'Network RX', null, null, null, ItemValueType::INTEGER, 60, null, true, true, $now);
+
+        self::assertSame(
+            ['container' => 'api', 'interface' => 'eth0'],
+            (new ItemDefinitionMetricQueryFactory())->dimensionLabels($item, [
+                '__name__' => 'osira_container_network_rx',
+                'node_id' => 'ignored',
+                'interface' => 'eth0',
+                'job' => 'volatile',
+                'container' => 'api',
+            ]),
+        );
+    }
 }

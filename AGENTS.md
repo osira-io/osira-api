@@ -116,6 +116,13 @@ Examples:
 - Audit business-significant changes when the resource is already part of the audited surface or when the new capability materially changes system state.
 - Keep OpenAPI accurate after API changes.
 
+## Alert evaluation and incidents
+
+- Alert evaluation runs server-side outside the HTTP request path and only evaluates rules returned by `EffectiveNodeMonitoringResolver::getEffectiveAlertRules()`.
+- VictoriaMetrics is the source of metric samples; PostgreSQL stores only incident business state, never evaluation samples.
+- Incident identity is the combination of Node, AlertRule, and normalized metric dimension labels.
+- `NO_DATA` and VictoriaMetrics/backend errors never resolve an active incident.
+
 ## Migrations and fixtures
 
 - Never rewrite an old migration that may already have been applied.

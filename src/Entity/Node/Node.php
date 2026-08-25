@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity\Node;
 
 use App\Entity\Agent\Agent;
+use App\Entity\Alert\AlertRule;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Node\NodeRepository;
@@ -68,6 +69,10 @@ final class Node
     #[ORM\InverseJoinColumn(name: 'monitoring_template_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $monitoringTemplates;
 
+    /** @var Collection<int, AlertRule> */
+    #[ORM\ManyToMany(targetEntity: AlertRule::class, mappedBy: 'nodes')]
+    private Collection $alertRules;
+
     public function __construct(
         string $hostname,
         ?string $displayName,
@@ -86,6 +91,7 @@ final class Node
         $this->agents = new ArrayCollection();
         $this->groups = new ArrayCollection();
         $this->monitoringTemplates = new ArrayCollection();
+        $this->alertRules = new ArrayCollection();
     }
 
     public function id(): Ulid
@@ -144,6 +150,19 @@ final class Node
     public function monitoringTemplates(): Collection
     {
         return $this->monitoringTemplates;
+    }
+
+    /** @return Collection<int, AlertRule> */
+    public function alertRules(): Collection
+    {
+        return $this->alertRules;
+    }
+
+    public function addAlertRule(AlertRule $alertRule): void
+    {
+        if (!$this->alertRules->contains($alertRule)) {
+            $this->alertRules->add($alertRule);
+        }
     }
 
     /** @param list<string> $tags */

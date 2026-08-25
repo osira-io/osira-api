@@ -38,12 +38,13 @@ final class SystemRole
                     PermissionCode::NODE_GROUPS_UPDATE,
                     PermissionCode::NODE_GROUPS_DELETE,
                     PermissionCode::METRICS_READ,
+                    PermissionCode::INCIDENTS_READ,
                 ],
             ],
             self::VIEWER => [
                 'name' => 'Viewer',
                 'description' => 'Reads nodes and node groups without modifying them.',
-                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ],
+                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ, PermissionCode::INCIDENTS_READ],
             ],
         ];
     }

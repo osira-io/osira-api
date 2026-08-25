@@ -31,10 +31,7 @@ final class ItemDefinitionMetricQueryFactory
 
     public function buildQuery(ItemDefinition $itemDefinition, Node $node, MetricLabelFilters $filters): string
     {
-        $definition = self::MAP[$itemDefinition->key()] ?? null;
-        if (null === $definition) {
-            throw new UnprocessableEntityHttpException(\sprintf('No VictoriaMetrics mapping exists for item definition "%s".', $itemDefinition->key()));
-        }
+        $definition = $this->definition($itemDefinition);
 
         $filterLabels = $filters->toArray();
         $unsupported = array_diff(array_keys($filterLabels), $definition['labels']);
@@ -49,6 +46,29 @@ final class ItemDefinitionMetricQueryFactory
         }
 
         return \sprintf('%s{%s}', $definition['metric'], implode(',', $parts));
+    }
+
+    /** @param array<string, string> $labels
+     * @return array<string, string>
+     */
+    public function dimensionLabels(ItemDefinition $itemDefinition, array $labels): array
+    {
+        $allowed = array_fill_keys($this->definition($itemDefinition)['labels'], true);
+        $dimensions = array_intersect_key($labels, $allowed);
+        ksort($dimensions);
+
+        return $dimensions;
+    }
+
+    /** @return array{metric: string, labels: list<string>} */
+    private function definition(ItemDefinition $itemDefinition): array
+    {
+        $definition = self::MAP[$itemDefinition->key()] ?? null;
+        if (null === $definition) {
+            throw new UnprocessableEntityHttpException(\sprintf('No VictoriaMetrics mapping exists for item definition "%s".', $itemDefinition->key()));
+        }
+
+        return $definition;
     }
 
     private static function escapeLabelValue(string $value): string

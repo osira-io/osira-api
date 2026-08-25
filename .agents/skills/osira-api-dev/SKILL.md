@@ -44,4 +44,5 @@ Read only the references that matter for the current task:
 - Do not broaden scope with speculative refactors.
 - Do not invent custom infrastructure when the installed Symfony/API Platform/Doctrine stack already provides the right convention.
 - Do not expose arbitrary MetricsQL or other infrastructure-native query languages directly in public Osira APIs.
+- Keep alert evaluation server-side and periodic; `NO_DATA` or backend errors must never recover an incident.
 - Do not add interfaces, factories, traits, or subscribers mechanically.

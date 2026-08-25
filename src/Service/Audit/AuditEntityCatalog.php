@@ -7,6 +7,7 @@ namespace App\Service\Audit;
 use App\Entity\Agent\Agent;
 use App\Entity\Agent\AgentCredential;
 use App\Entity\Enrollment\EnrollmentToken;
+use App\Entity\Incident\Incident;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
@@ -17,7 +18,7 @@ use App\Entity\User\User;
 
 final class AuditEntityCatalog
 {
-    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'Agent', 'AgentCredential', 'EnrollmentToken'];
+    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'Agent', 'AgentCredential', 'EnrollmentToken', 'Incident'];
 
     /** @var array<string, class-string> */
     public const array ENTITIES = [
@@ -31,6 +32,7 @@ final class AuditEntityCatalog
         'Agent' => Agent::class,
         'AgentCredential' => AgentCredential::class,
         'EnrollmentToken' => EnrollmentToken::class,
+        'Incident' => Incident::class,
     ];
 
     /**
@@ -50,6 +52,7 @@ final class AuditEntityCatalog
         'Agent' => 'audit_agents',
         'AgentCredential' => 'audit_agent_credentials',
         'EnrollmentToken' => 'audit_enrollment_tokens',
+        'Incident' => 'audit_incidents',
     ];
 
     /** @return array<string, class-string> */
