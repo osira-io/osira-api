@@ -9,6 +9,7 @@ use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Alert\AlertRuleRepository;
+use App\Validator\Alert\AlertRuleAssignmentValidator;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -150,6 +151,7 @@ final class AlertRule
 
     public function assignToTemplate(MonitoringTemplate $template): void
     {
+        AlertRuleAssignmentValidator::assertTemplateItem($this->itemDefinition, $template);
         if (!$this->assignedTemplates->contains($template)) {
             $this->assignedTemplates->add($template);
             $template->addAlertRule($this);
@@ -158,6 +160,7 @@ final class AlertRule
 
     public function assignToNodeGroup(NodeGroup $group): void
     {
+        AlertRuleAssignmentValidator::assertNodeGroupItem($this->itemDefinition, $group);
         if (!$this->nodeGroups->contains($group)) {
             $this->nodeGroups->add($group);
             $group->addAlertRule($this);
@@ -166,6 +169,7 @@ final class AlertRule
 
     public function assignToNode(Node $node): void
     {
+        AlertRuleAssignmentValidator::assertNodeItem($this->itemDefinition, $node);
         if (!$this->nodes->contains($node)) {
             $this->nodes->add($node);
             $node->addAlertRule($this);

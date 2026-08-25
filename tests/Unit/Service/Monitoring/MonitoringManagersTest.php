@@ -9,7 +9,6 @@ use App\Dto\Monitoring\CreateMonitoringTemplateInput;
 use App\Dto\Monitoring\UpdateItemDefinitionInput;
 use App\Dto\Monitoring\UpdateMonitoringTemplateInput;
 use App\Entity\Monitoring\ItemDefinition;
-use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Service\Monitoring\ItemDefinitionManager;
 use App\Service\Monitoring\MonitoringTemplateManager;
@@ -47,11 +46,11 @@ final class MonitoringManagersTest extends KernelTestCase
         $input->key = '  CUSTOM.CHECK.LATENCY  ';
         $input->name = '  Custom latency  ';
         $input->description = '  Probe latency  ';
-        $input->category = '  Custom  ';
         $input->unit = '  ms  ';
         $input->valueType = 'float';
         $input->intervalSeconds = 30;
         $input->timeoutSeconds = 5;
+        $input->linuxCommand = "printf '12.5'";
         $input->isEnabled = true;
 
         $item = $this->itemDefinitionManager->create($input);
@@ -59,25 +58,9 @@ final class MonitoringManagersTest extends KernelTestCase
         self::assertSame('custom.check.latency', $item->key());
         self::assertSame('Custom latency', $item->name());
         self::assertSame('Probe latency', $item->description());
-        self::assertSame('Custom', $item->category());
         self::assertSame('ms', $item->unit());
+        self::assertSame("printf '12.5'", $item->linuxCommand());
         self::assertSame(1, $this->entityManager->getRepository(ItemDefinition::class)->count([]));
-    }
-
-    public function testItemDefinitionManagerUpdateRejectsSystemItems(): void
-    {
-        $item = $this->persistSystemItemDefinition();
-
-        $this->expectException(ResourceConflictException::class);
-        $this->itemDefinitionManager->update((string) $item->id(), new UpdateItemDefinitionInput());
-    }
-
-    public function testItemDefinitionManagerDeleteRejectsSystemItems(): void
-    {
-        $item = $this->persistSystemItemDefinition();
-
-        $this->expectException(ResourceConflictException::class);
-        $this->itemDefinitionManager->delete((string) $item->id());
     }
 
     public function testItemDefinitionManagerDeleteRejectsInvalidId(): void
@@ -123,14 +106,6 @@ final class MonitoringManagersTest extends KernelTestCase
         self::assertSame(1, $this->entityManager->getRepository(MonitoringTemplate::class)->count([]));
     }
 
-    public function testMonitoringTemplateManagerUpdateRejectsSystemTemplates(): void
-    {
-        $template = $this->persistSystemMonitoringTemplate();
-
-        $this->expectException(ResourceConflictException::class);
-        $this->monitoringTemplateManager->update((string) $template->id(), new UpdateMonitoringTemplateInput());
-    }
-
     public function testMonitoringTemplateManagerDeleteRejectsInvalidId(): void
     {
         $this->expectException(ResourceNotFoundException::class);
@@ -150,37 +125,17 @@ final class MonitoringManagersTest extends KernelTestCase
         $this->monitoringTemplateManager->update((string) $template->id(), $input);
     }
 
-    private function persistSystemItemDefinition(): ItemDefinition
-    {
-        $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
-        $item = new ItemDefinition('system.cpu.usage', 'CPU usage', null, null, null, ItemValueType::FLOAT, 60, null, true, true, $now);
-        $this->entityManager->persist($item);
-        $this->entityManager->flush();
-
-        return $item;
-    }
-
-    private function persistSystemMonitoringTemplate(): MonitoringTemplate
-    {
-        $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
-        $template = new MonitoringTemplate('Linux Base', 'linux-base', null, true, true, $now);
-        $this->entityManager->persist($template);
-        $this->entityManager->flush();
-
-        return $template;
-    }
-
     private function createItemDefinitionInput(string $key, string $name): CreateItemDefinitionInput
     {
         $input = new CreateItemDefinitionInput();
         $input->key = $key;
         $input->name = $name;
         $input->description = null;
-        $input->category = null;
         $input->unit = null;
         $input->valueType = 'float';
         $input->intervalSeconds = 30;
         $input->timeoutSeconds = null;
+        $input->linuxCommand = 'printf 1';
         $input->isEnabled = true;
 
         return $input;

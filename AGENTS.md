@@ -123,6 +123,15 @@ Examples:
 - Incident identity is the combination of Node, AlertRule, and normalized metric dimension labels.
 - `NO_DATA` and VictoriaMetrics/backend errors never resolve an active incident.
 
+## Monitoring product model
+
+- Product bootstrap creates zero `ItemDefinition`, zero `MonitoringTemplate`, and zero `AlertRule`; development fixtures are examples, never a product catalog.
+- All items are user-defined collection commands: Bash on Linux and PowerShell on Windows. Remote actions are a separate future capability.
+- Effective item inheritance has one path only: `ItemDefinition -> MonitoringTemplate -> NodeGroup -> Node`. Items are never assigned directly to groups/nodes, and templates are never assigned directly to nodes.
+- `/api/agent/config` exposes only the command compatible with the Node OS. Unknown OS values and incompatible or string-valued items fail safe and are not collected.
+- VictoriaMetrics uses the generic `osira_item_value` series scoped by controlled `node_id` and `item_key` labels; no item-key mapping or user MetricsQL is allowed.
+- Creating or changing Bash/PowerShell requires `item_definitions.manage_commands`, and command changes remain on the audited `ItemDefinition` surface.
+
 ## Migrations and fixtures
 
 - Never rewrite an old migration that may already have been applied.

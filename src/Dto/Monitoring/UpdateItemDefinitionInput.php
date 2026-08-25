@@ -16,8 +16,6 @@ final class UpdateItemDefinitionInput
     private ?string $name = null;
     private bool $descriptionProvided = false;
     private ?string $description = null;
-    private bool $categoryProvided = false;
-    private ?string $category = null;
     private bool $unitProvided = false;
     private ?string $unit = null;
     private bool $valueTypeProvided = false;
@@ -26,6 +24,10 @@ final class UpdateItemDefinitionInput
     private ?int $intervalSeconds = null;
     private bool $timeoutSecondsProvided = false;
     private ?int $timeoutSeconds = null;
+    private bool $linuxCommandProvided = false;
+    private ?string $linuxCommand = null;
+    private bool $windowsCommandProvided = false;
+    private ?string $windowsCommand = null;
     private bool $isEnabledProvided = false;
     private ?bool $isEnabled = null;
 
@@ -85,24 +87,6 @@ final class UpdateItemDefinitionInput
         return $this->descriptionProvided;
     }
 
-    #[Assert\Length(max: 128)]
-    public function getCategory(): ?string
-    {
-        return $this->category;
-    }
-
-    public function setCategory(?string $category): void
-    {
-        $this->categoryProvided = true;
-        $this->category = $category;
-    }
-
-    #[Ignore]
-    public function isCategoryProvided(): bool
-    {
-        return $this->categoryProvided;
-    }
-
     #[Assert\Length(max: 32)]
     public function getUnit(): ?string
     {
@@ -121,7 +105,7 @@ final class UpdateItemDefinitionInput
         return $this->unitProvided;
     }
 
-    #[Assert\Choice(callback: [ItemValueType::class, 'values'])]
+    #[Assert\Choice(callback: [ItemValueType::class, 'metricValues'])]
     public function getValueType(): ?string
     {
         return $this->valueType;
@@ -173,6 +157,44 @@ final class UpdateItemDefinitionInput
     public function isTimeoutSecondsProvided(): bool
     {
         return $this->timeoutSecondsProvided;
+    }
+
+    #[Assert\Length(max: 20000)]
+    #[Assert\Regex(pattern: '/\x00/', match: false, message: 'Collection commands cannot contain NUL bytes.')]
+    public function getLinuxCommand(): ?string
+    {
+        return $this->linuxCommand;
+    }
+
+    public function setLinuxCommand(?string $linuxCommand): void
+    {
+        $this->linuxCommandProvided = true;
+        $this->linuxCommand = $linuxCommand;
+    }
+
+    #[Ignore]
+    public function isLinuxCommandProvided(): bool
+    {
+        return $this->linuxCommandProvided;
+    }
+
+    #[Assert\Length(max: 20000)]
+    #[Assert\Regex(pattern: '/\x00/', match: false, message: 'Collection commands cannot contain NUL bytes.')]
+    public function getWindowsCommand(): ?string
+    {
+        return $this->windowsCommand;
+    }
+
+    public function setWindowsCommand(?string $windowsCommand): void
+    {
+        $this->windowsCommandProvided = true;
+        $this->windowsCommand = $windowsCommand;
+    }
+
+    #[Ignore]
+    public function isWindowsCommandProvided(): bool
+    {
+        return $this->windowsCommandProvided;
     }
 
     public function getIsEnabled(): ?bool

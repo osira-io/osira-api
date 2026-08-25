@@ -13,6 +13,7 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
+use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Incident\IncidentRepository;
 use App\Service\Alert\AlertEvaluationService;
 use App\Service\Metrics\VictoriaMetricsClientProxy;
@@ -46,14 +47,16 @@ final class AlertEvaluationServiceTest extends KernelTestCase
     {
         $now = new \DateTimeImmutable();
         $node = new Node('evaluation-node', null, 'linux', 'amd64', $now, $now);
-        $item = new ItemDefinition('system.cpu.usage', 'CPU', null, null, '%', ItemValueType::FLOAT, 60, null, true, true, $now);
-        $template = new MonitoringTemplate('Evaluation', 'evaluation', null, false, true, $now);
+        $item = new ItemDefinition('custom.cpu.usage', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 95', null, true, $now);
+        $template = new MonitoringTemplate('Evaluation', 'evaluation', null, true, $now);
         $template->replaceItemDefinitions([$item], $now);
-        $node->replaceMonitoringTemplates([$template]);
+        $group = new NodeGroup('Evaluation group', null, $now);
+        $group->replaceMonitoringTemplates([$template], $now);
+        $node->replaceGroups([$group]);
         $rule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, true, $now);
         $rule->assignToTemplate($template);
         $em = self::getContainer()->get(EntityManagerInterface::class);
-        foreach ([$node, $item, $template, $rule] as $entity) {
+        foreach ([$node, $group, $item, $template, $rule] as $entity) {
             $em->persist($entity);
         }
         $em->flush();
@@ -106,14 +109,16 @@ final class AlertEvaluationServiceTest extends KernelTestCase
     {
         $now = new \DateTimeImmutable();
         $node = new Node('dimension-node', null, 'linux', 'amd64', $now, $now);
-        $item = new ItemDefinition('system.disk.usage', 'Disk', null, null, '%', ItemValueType::FLOAT, 60, null, true, true, $now);
-        $template = new MonitoringTemplate('Disk evaluation', 'disk-evaluation', null, false, true, $now);
+        $item = new ItemDefinition('custom.disk.usage', 'Disk', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 95', null, true, $now);
+        $template = new MonitoringTemplate('Disk evaluation', 'disk-evaluation', null, true, $now);
         $template->replaceItemDefinitions([$item], $now);
-        $node->replaceMonitoringTemplates([$template]);
+        $group = new NodeGroup('Disk evaluation group', null, $now);
+        $group->replaceMonitoringTemplates([$template], $now);
+        $node->replaceGroups([$group]);
         $rule = new AlertRule('Disk high', 'Disk high', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
         $rule->assignToTemplate($template);
         $em = self::getContainer()->get(EntityManagerInterface::class);
-        foreach ([$node, $item, $template, $rule] as $entity) {
+        foreach ([$node, $group, $item, $template, $rule] as $entity) {
             $em->persist($entity);
         }
         $em->flush();

@@ -16,4 +16,15 @@ enum ItemValueType: string
     {
         return array_map(static fn (self $case): string => $case->value, self::cases());
     }
+
+    /** @return list<string> */
+    public static function metricValues(): array
+    {
+        return [self::FLOAT->value, self::INTEGER->value, self::BOOLEAN->value];
+    }
+
+    public function isMetricCompatible(): bool
+    {
+        return self::STRING !== $this;
+    }
 }

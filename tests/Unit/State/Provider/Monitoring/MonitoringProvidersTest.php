@@ -48,7 +48,7 @@ final class MonitoringProvidersTest extends KernelTestCase
     public function testItemDefinitionProviderBuildsOutputWhenEntityExists(): void
     {
         $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
-        $item = new ItemDefinition('system.cpu.usage', 'CPU usage', null, null, null, ItemValueType::FLOAT, 60, null, false, true, $now);
+        $item = new ItemDefinition('custom.cpu.usage', 'CPU usage', null, null, ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
         $this->entityManager->persist($item);
         $this->entityManager->flush();
 
@@ -59,7 +59,7 @@ final class MonitoringProvidersTest extends KernelTestCase
         $output = $provider->provide(new Get(), ['id' => (string) $item->id()]);
 
         self::assertNotNull($output);
-        self::assertSame('system.cpu.usage', $output->key);
+        self::assertSame('custom.cpu.usage', $output->key);
     }
 
     public function testMonitoringTemplateProviderReturnsNullForInvalidOrMissingIds(): void
@@ -76,7 +76,7 @@ final class MonitoringProvidersTest extends KernelTestCase
     public function testMonitoringTemplateProviderBuildsOutputWhenEntityExists(): void
     {
         $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
-        $template = new MonitoringTemplate('Linux Base', 'linux-base', null, false, true, $now);
+        $template = new MonitoringTemplate('Linux', 'linux', null, true, $now);
         $this->entityManager->persist($template);
         $this->entityManager->flush();
 
@@ -87,6 +87,6 @@ final class MonitoringProvidersTest extends KernelTestCase
         $output = $provider->provide(new Get(), ['id' => (string) $template->id()]);
 
         self::assertNotNull($output);
-        self::assertSame('linux-base', $output->slug);
+        self::assertSame('linux', $output->slug);
     }
 }

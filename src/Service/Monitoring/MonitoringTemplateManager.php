@@ -35,7 +35,7 @@ final readonly class MonitoringTemplateManager
         $slug = $this->monitoringTemplateFactory->normalizeSlug($input->slug ?? $name);
         $this->assertAvailable($name, $slug);
         $now = $this->clock->now();
-        $monitoringTemplate = $this->monitoringTemplateFactory->create($name, $slug, $input->description, false, $input->isEnabled, $now);
+        $monitoringTemplate = $this->monitoringTemplateFactory->create($name, $slug, $input->description, $input->isEnabled, $now);
         $monitoringTemplate->replaceItemDefinitions($this->resolveItemDefinitions($input->itemDefinitionIds), $now);
         $this->entityManager->persist($monitoringTemplate);
         $this->entityManager->flush();
@@ -46,10 +46,6 @@ final readonly class MonitoringTemplateManager
     public function update(string $id, UpdateMonitoringTemplateInput $input): MonitoringTemplate
     {
         $monitoringTemplate = $this->find($id);
-        if ($monitoringTemplate->isSystem()) {
-            throw new ResourceConflictException('System monitoring templates cannot be modified directly.');
-        }
-
         $name = $input->isNameProvided() ? $this->monitoringTemplateFactory->normalizeName($input->getName() ?? '') : $monitoringTemplate->name();
         $slug = $input->isSlugProvided() ? $this->monitoringTemplateFactory->normalizeSlug($input->getSlug() ?? $name) : $monitoringTemplate->slug();
         $description = $input->isDescriptionProvided() ? $this->monitoringTemplateFactory->normalizeDescription($input->getDescription()) : $monitoringTemplate->description();
@@ -70,9 +66,6 @@ final readonly class MonitoringTemplateManager
     public function delete(string $id): void
     {
         $monitoringTemplate = $this->find($id);
-        if ($monitoringTemplate->isSystem()) {
-            throw new ResourceConflictException('System monitoring templates cannot be deleted.');
-        }
         $this->entityManager->remove($monitoringTemplate);
         $this->entityManager->flush();
     }

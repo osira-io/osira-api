@@ -174,17 +174,27 @@ final class AuditLogTest extends ApiTestCase
                 'name' => 'Audited custom item',
                 'valueType' => 'float',
                 'intervalSeconds' => 60,
+                'timeoutSeconds' => 5,
+                'linuxCommand' => 'printf 1',
             ],
         ])->toArray();
         $itemDefinitionId = $itemDefinition['id'] ?? null;
         self::assertIsString($itemDefinitionId);
         $client->request('PATCH', '/api/item-definitions/'.$itemDefinitionId, [
             'auth_bearer' => $token,
-            'json' => ['description' => 'Updated by audit test'],
+            'json' => ['description' => 'Updated by audit test', 'linuxCommand' => 'printf 2'],
         ]);
         self::assertResponseIsSuccessful();
         self::assertNotEmpty($this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'insert'));
-        self::assertNotEmpty($this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'update'));
+        $itemUpdates = $this->auditItems($client, $token, 'ItemDefinition', $itemDefinitionId, 'update');
+        self::assertNotEmpty($itemUpdates);
+        self::assertIsArray($itemUpdates[0]);
+        $itemChanges = $itemUpdates[0]['changes'] ?? null;
+        self::assertIsArray($itemChanges);
+        $commandChanges = $itemChanges['linuxCommand'] ?? null;
+        self::assertIsArray($commandChanges);
+        self::assertSame('printf 1', $commandChanges['old'] ?? null);
+        self::assertSame('printf 2', $commandChanges['new'] ?? null);
 
         $monitoringTemplate = $client->request('POST', '/api/monitoring-templates', [
             'auth_bearer' => $token,

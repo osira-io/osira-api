@@ -8,6 +8,7 @@ use App\Entity\Alert\AlertRule;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
+use App\Validator\Alert\AlertRuleAssignmentValidator;
 
 final class EffectiveNodeMonitoringResolver
 {
@@ -45,7 +46,7 @@ final class EffectiveNodeMonitoringResolver
             }
         }
 
-        $rules = array_values(array_filter($rulesById, static fn (AlertRule $rule): bool => $rule->isEnabled() && isset($effectiveItemIds[(string) $rule->itemDefinition()->id()])));
+        $rules = array_values(array_filter($rulesById, static fn (AlertRule $rule): bool => AlertRuleAssignmentValidator::isEffectiveForNode($rule, $node, $effectiveItemIds)));
         usort($rules, static fn (AlertRule $left, AlertRule $right): int => [$left->name(), (string) $left->id()] <=> [$right->name(), (string) $right->id()]);
 
         return $rules;
@@ -55,11 +56,6 @@ final class EffectiveNodeMonitoringResolver
     private function resolveTemplatesAndItems(Node $node): array
     {
         $templatesById = [];
-        foreach ($node->monitoringTemplates() as $template) {
-            if ($template->isEnabled()) {
-                $templatesById[(string) $template->id()] = $template;
-            }
-        }
         foreach ($node->groups() as $group) {
             foreach ($group->monitoringTemplates() as $template) {
                 if ($template->isEnabled()) {
@@ -73,7 +69,7 @@ final class EffectiveNodeMonitoringResolver
         $itemsById = [];
         foreach ($templates as $template) {
             foreach ($template->itemDefinitions() as $itemDefinition) {
-                if ($itemDefinition->isEnabled()) {
+                if ($itemDefinition->isEnabled() && $itemDefinition->valueType()->isMetricCompatible() && null !== $itemDefinition->commandForOs($node->os())) {
                     $itemsById[(string) $itemDefinition->id()] = $itemDefinition;
                 }
             }

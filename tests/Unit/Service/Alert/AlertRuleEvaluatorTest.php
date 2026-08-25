@@ -92,7 +92,7 @@ final class AlertRuleEvaluatorTest extends TestCase
     private function rule(ItemValueType $type, AlertOperator $operator, string $threshold, int $window, int $occurrences, ?string $recovery = null): AlertRule
     {
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
-        $item = new ItemDefinition('test.metric', 'Metric', null, null, null, $type, 60, null, false, true, $now);
+        $item = new ItemDefinition('custom.test.metric', 'Metric', null, null, $type, 60, 5, 'printf 1', null, true, $now);
 
         return new AlertRule('Rule', 'Alert title', 'Alert message', $item, $operator, $threshold, $recovery, $window, $occurrences, AlertSeverity::WARNING, true, $now);
     }

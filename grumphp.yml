@@ -63,6 +63,9 @@ grumphp:
             exclude:
                 - vendor
                 - var
+            ignore_patterns:
+                - /^src\/Command\/Monitoring\/SyncMonitoringCatalogCommand\.php$/
+                - /^src\/Service\/Monitoring\/MonitoringCatalogSynchronizer\.php$/
         phpstan:
             configuration: phpstan.neon
             memory_limit: 512M

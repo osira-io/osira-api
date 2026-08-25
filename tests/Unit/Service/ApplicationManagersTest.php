@@ -17,7 +17,6 @@ use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\Rbac\RoleRepository;
 use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
-use App\Service\Monitoring\MonitoringCatalogSynchronizer;
 use App\Service\NodeGroup\NodeGroupManager;
 use App\Service\Rbac\RbacCatalogSynchronizer;
 use App\Service\Rbac\RoleManager;
@@ -48,7 +47,9 @@ final class ApplicationManagersTest extends KernelTestCase
         $schemaTool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
 
         self::getContainer()->get(RbacCatalogSynchronizer::class)->synchronize();
-        self::getContainer()->get(MonitoringCatalogSynchronizer::class)->synchronize();
+        $template = new MonitoringTemplate('Example Linux', 'example-linux', null, true, new \DateTimeImmutable());
+        $this->entityManager->persist($template);
+        $this->entityManager->flush();
 
         $this->userManager = self::getContainer()->get(UserManager::class);
         $this->roleManager = self::getContainer()->get(RoleManager::class);
@@ -156,7 +157,7 @@ final class ApplicationManagersTest extends KernelTestCase
 
     public function testNodeGroupManagerCreatesUpdatesAndRejectsUnknownMonitoringTemplates(): void
     {
-        $linuxBase = $this->monitoringTemplateRepository->findOneBy(['slug' => 'linux-base']);
+        $linuxBase = $this->monitoringTemplateRepository->findOneBy(['slug' => 'example-linux']);
         self::assertInstanceOf(MonitoringTemplate::class, $linuxBase);
 
         $createInput = new CreateNodeGroupInput();

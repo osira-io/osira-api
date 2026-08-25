@@ -100,6 +100,15 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringContainsString('environment', $encoded);
         self::assertStringContainsString('tags', $encoded);
         self::assertStringContainsString('groups', $encoded);
+        self::assertStringNotContainsString('monitoringTemplateIds', $encoded);
+        $itemCreate = json_encode(self::objectAt($schemas, 'ItemDefinition.CreateItemDefinitionInput'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('linuxCommand', $itemCreate);
+        self::assertStringContainsString('windowsCommand', $itemCreate);
+        self::assertStringNotContainsString('category', $itemCreate);
+        self::assertStringNotContainsString('isSystem', $itemCreate);
+        $agentConfig = json_encode(self::objectAt($schemas, 'AgentConfig'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('execution', $agentConfig);
+        self::assertStringContainsString('powershell', $agentConfig);
         self::assertArrayHasKey('NodeCollection', $schemas);
         self::assertArrayHasKey('NodeGroupCollection', $schemas);
         self::assertArrayHasKey('CurrentUser', $schemas);

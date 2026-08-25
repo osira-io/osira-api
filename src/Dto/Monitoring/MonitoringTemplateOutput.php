@@ -11,7 +11,6 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
-use App\Dto\Node\NodeSummary;
 use App\Dto\NodeGroup\NodeGroupSummary;
 use App\Security\Rbac\PermissionCode;
 use App\State\Processor\Monitoring\CreateMonitoringTemplateProcessor;
@@ -63,7 +62,6 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class MonitoringTemplateOutput
 {
     /** @param list<ItemDefinitionSummary> $itemDefinitions
-     * @param list<NodeSummary> $nodes
      * @param list<NodeGroupSummary> $nodeGroups
      */
     public function __construct(
@@ -72,10 +70,8 @@ final readonly class MonitoringTemplateOutput
         public string $name,
         public string $slug,
         public ?string $description,
-        public bool $isSystem,
         public bool $isEnabled,
         public array $itemDefinitions,
-        public array $nodes,
         public array $nodeGroups,
         public \DateTimeImmutable $createdAt,
         public \DateTimeImmutable $updatedAt,

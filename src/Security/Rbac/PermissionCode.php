@@ -31,6 +31,7 @@ final class PermissionCode
     public const string ITEM_DEFINITIONS_CREATE = 'item_definitions.create';
     public const string ITEM_DEFINITIONS_UPDATE = 'item_definitions.update';
     public const string ITEM_DEFINITIONS_DELETE = 'item_definitions.delete';
+    public const string ITEM_DEFINITIONS_MANAGE_COMMANDS = 'item_definitions.manage_commands';
     public const string METRICS_READ = 'metrics.read';
     public const string AGENT_CREDENTIALS_REVOKE = 'agent_credentials.revoke';
     public const string INCIDENTS_READ = 'incidents.read';
@@ -59,11 +60,12 @@ final class PermissionCode
             self::MONITORING_TEMPLATES_READ => self::entry('Read monitoring templates', 'View monitoring templates and their assignments.', 'Monitoring'),
             self::MONITORING_TEMPLATES_CREATE => self::entry('Create monitoring templates', 'Create monitoring templates.', 'Monitoring'),
             self::MONITORING_TEMPLATES_UPDATE => self::entry('Update monitoring templates', 'Update monitoring templates and their item assignments.', 'Monitoring'),
-            self::MONITORING_TEMPLATES_DELETE => self::entry('Delete monitoring templates', 'Delete non-system monitoring templates.', 'Monitoring'),
+            self::MONITORING_TEMPLATES_DELETE => self::entry('Delete monitoring templates', 'Delete monitoring templates.', 'Monitoring'),
             self::ITEM_DEFINITIONS_READ => self::entry('Read item definitions', 'View item definitions.', 'Monitoring'),
             self::ITEM_DEFINITIONS_CREATE => self::entry('Create item definitions', 'Create item definitions.', 'Monitoring'),
             self::ITEM_DEFINITIONS_UPDATE => self::entry('Update item definitions', 'Update item definitions.', 'Monitoring'),
-            self::ITEM_DEFINITIONS_DELETE => self::entry('Delete item definitions', 'Delete non-system item definitions.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_DELETE => self::entry('Delete item definitions', 'Delete item definitions.', 'Monitoring'),
+            self::ITEM_DEFINITIONS_MANAGE_COMMANDS => self::entry('Manage item commands', 'Create or modify Bash and PowerShell collection commands.', 'Monitoring'),
             self::METRICS_READ => self::entry('Read metrics', 'Read VictoriaMetrics-backed metric values through the Osira API.', 'Monitoring'),
             self::AGENT_CREDENTIALS_REVOKE => self::entry('Revoke agent credentials', 'Revoke active control-plane agent credentials.', 'Enrollment'),
             self::INCIDENTS_READ => self::entry('Read incidents', 'View incidents produced by server-side alert evaluation.', 'Monitoring'),

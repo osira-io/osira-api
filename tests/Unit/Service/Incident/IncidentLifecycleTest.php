@@ -57,7 +57,7 @@ final class IncidentLifecycleTest extends TestCase
     private function subjects(\DateTimeImmutable $now): array
     {
         $node = new Node('node-1', null, 'linux', 'amd64', $now, $now);
-        $item = new ItemDefinition('system.disk.usage', 'Disk', null, null, '%', ItemValueType::FLOAT, 60, null, true, true, $now);
+        $item = new ItemDefinition('custom.disk.usage', 'Disk', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
         $rule = new AlertRule('Disk full', 'Disk full', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, true, $now);
 
         return [$node, $rule];

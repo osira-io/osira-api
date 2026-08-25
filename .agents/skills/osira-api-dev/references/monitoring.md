@@ -11,15 +11,19 @@ Use this reference for monitoring catalog and metrics read-path work.
 ## Monitoring catalog
 
 - `ItemDefinition.key` is the stable public key.
-- Infrastructure metric names are internal mappings, not public API.
-- System templates and items stay protected by domain rules and idempotent sync.
+- Product bootstrap creates no items, templates, or alert rules. Development fixtures may contain clearly identified examples only.
+- Every item is user-created and contains at least one collection command: Bash for Linux and/or PowerShell for Windows.
+- Effective items follow only `ItemDefinition -> MonitoringTemplate -> NodeGroup -> Node`; there are no direct Item -> Group/Node or Template -> Node assignments.
+- Filter disabled templates/items, unsupported string metrics, and OS-incompatible commands fail-safe. Unknown operating systems receive no items.
+- Command creation/change requires `item_definitions.manage_commands` and is audited. Collection commands are not remote actions.
 
 ## VictoriaMetrics read path
 
 - Use a dedicated VictoriaMetrics client boundary.
 - Support only the read APIs needed by the feature, not a public query proxy.
 - Node metric reads must always be scoped by the target node identifier.
-- Keep query mapping centralized and testable.
+- Use the centralized generic series `osira_item_value` with controlled `node_id` and `item_key` labels for any valid `ItemDefinition.key`.
+- Treat all remaining non-infrastructure labels as dimensions; never derive a metric name or MetricsQL fragment from user input.
 - Public responses expose Osira DTOs, not raw VictoriaMetrics payloads.
 
 ## Alert evaluation

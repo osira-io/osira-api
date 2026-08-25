@@ -6,7 +6,6 @@ namespace App\Entity\Node;
 
 use App\Entity\Agent\Agent;
 use App\Entity\Alert\AlertRule;
-use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Node\NodeRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -62,13 +61,6 @@ final class Node
     #[ORM\InverseJoinColumn(name: 'node_group_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $groups;
 
-    /** @var Collection<int, MonitoringTemplate> */
-    #[ORM\ManyToMany(targetEntity: MonitoringTemplate::class, inversedBy: 'nodes')]
-    #[ORM\JoinTable(name: 'node_monitoring_templates')]
-    #[ORM\JoinColumn(name: 'node_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    #[ORM\InverseJoinColumn(name: 'monitoring_template_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    private Collection $monitoringTemplates;
-
     /** @var Collection<int, AlertRule> */
     #[ORM\ManyToMany(targetEntity: AlertRule::class, mappedBy: 'nodes')]
     private Collection $alertRules;
@@ -90,7 +82,6 @@ final class Node
         $this->createdAt = $createdAt;
         $this->agents = new ArrayCollection();
         $this->groups = new ArrayCollection();
-        $this->monitoringTemplates = new ArrayCollection();
         $this->alertRules = new ArrayCollection();
     }
 
@@ -146,12 +137,6 @@ final class Node
         return $this->groups;
     }
 
-    /** @return Collection<int, MonitoringTemplate> */
-    public function monitoringTemplates(): Collection
-    {
-        return $this->monitoringTemplates;
-    }
-
     /** @return Collection<int, AlertRule> */
     public function alertRules(): Collection
     {
@@ -182,36 +167,10 @@ final class Node
         }
     }
 
-    /** @param list<MonitoringTemplate> $monitoringTemplates */
-    public function replaceMonitoringTemplates(array $monitoringTemplates): void
-    {
-        foreach ($this->monitoringTemplates->toArray() as $monitoringTemplate) {
-            $this->removeMonitoringTemplate($monitoringTemplate);
-        }
-        foreach ($monitoringTemplates as $monitoringTemplate) {
-            $this->addMonitoringTemplate($monitoringTemplate);
-        }
-    }
-
     public function addAgent(Agent $agent): void
     {
         if (!$this->agents->contains($agent)) {
             $this->agents->add($agent);
-        }
-    }
-
-    private function addMonitoringTemplate(MonitoringTemplate $monitoringTemplate): void
-    {
-        if (!$this->monitoringTemplates->contains($monitoringTemplate)) {
-            $this->monitoringTemplates->add($monitoringTemplate);
-            $monitoringTemplate->addNode($this);
-        }
-    }
-
-    private function removeMonitoringTemplate(MonitoringTemplate $monitoringTemplate): void
-    {
-        if ($this->monitoringTemplates->removeElement($monitoringTemplate)) {
-            $monitoringTemplate->removeNode($this);
         }
     }
 }

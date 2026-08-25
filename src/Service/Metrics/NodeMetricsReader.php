@@ -132,7 +132,7 @@ final readonly class NodeMetricsReader
      */
     private static function publicLabels(array $labels): array
     {
-        unset($labels['__name__'], $labels['node_id']);
+        unset($labels['__name__'], $labels['node_id'], $labels['item_key'], $labels['job'], $labels['instance']);
         ksort($labels);
 
         return $labels;

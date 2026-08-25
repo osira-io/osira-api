@@ -20,7 +20,6 @@ final class ItemDefinitionRepository extends ServiceEntityRepository
     public function createOrderedQueryBuilder(): QueryBuilder
     {
         return $this->createQueryBuilder('itemDefinition')
-            ->orderBy('itemDefinition.category', 'ASC')
-            ->addOrderBy('itemDefinition.key', 'ASC');
+            ->orderBy('itemDefinition.key', 'ASC');
     }
 }

@@ -9,7 +9,6 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
-use App\Dto\Monitoring\MonitoringTemplateSummary;
 use App\Dto\NodeGroup\NodeGroupSummary;
 use App\Security\Rbac\PermissionCode;
 use App\State\Processor\Node\UpdateNodeProcessor;
@@ -51,8 +50,6 @@ final readonly class NodeOutput
         public array $tags,
         /** @var list<NodeGroupSummary> */
         public array $groups,
-        /** @var list<MonitoringTemplateSummary> */
-        public array $monitoringTemplates,
         public \DateTimeImmutable $firstSeenAt,
         public \DateTimeImmutable $createdAt,
     ) {

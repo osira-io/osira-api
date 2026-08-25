@@ -7,11 +7,13 @@ namespace App\Tests\Functional\Api\Monitoring;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\Node\Node;
+use App\Entity\Rbac\Role;
 use App\Entity\User\User;
 use App\Repository\Node\NodeRepository;
+use App\Repository\Rbac\PermissionRepository;
+use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
 use App\Service\Monitoring\EffectiveNodeMonitoringResolver;
-use App\Service\Monitoring\MonitoringCatalogSynchronizer;
 use App\Tests\Functional\Support\RbacTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -35,11 +37,10 @@ final class MonitoringApiTest extends ApiTestCase
         $schemaTool->dropDatabase();
         $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
         $this->initializeRbac();
-        self::getContainer()->get(MonitoringCatalogSynchronizer::class)->synchronize();
         self::ensureKernelShutdown();
     }
 
-    public function testCrudAssignmentsAndSystemProtectionForMonitoringCatalog(): void
+    public function testEmptyCatalogCustomItemCrudAndGroupOnlyAssignments(): void
     {
         $client = self::createJsonClient();
         $superAdmin = $this->createUser('root@example.com', SystemRole::SUPER_ADMIN);
@@ -48,25 +49,18 @@ final class MonitoringApiTest extends ApiTestCase
         $client->request('GET', '/api/monitoring-templates');
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
 
-        $systemTemplates = $client->request('GET', '/api/monitoring-templates?itemsPerPage=100', ['auth_bearer' => $token])->toArray();
-        $systemItems = $client->request('GET', '/api/item-definitions?itemsPerPage=100', ['auth_bearer' => $token])->toArray();
-        $systemTemplateItems = $systemTemplates['items'] ?? null;
-        $systemItemItems = $systemItems['items'] ?? null;
-        self::assertIsArray($systemTemplateItems);
-        self::assertIsArray($systemItemItems);
-
-        self::assertCount(3, $systemTemplateItems);
-        self::assertCount(15, $systemItemItems);
+        self::assertSame([], $client->request('GET', '/api/monitoring-templates', ['auth_bearer' => $token])->toArray()['items'] ?? null);
+        self::assertSame([], $client->request('GET', '/api/item-definitions', ['auth_bearer' => $token])->toArray()['items'] ?? null);
 
         $client->request('POST', '/api/item-definitions', [
             'auth_bearer' => $token,
             'json' => [
                 'key' => 'custom.check.latency',
                 'name' => 'Custom latency',
-                'category' => 'Custom',
                 'unit' => 'ms',
                 'valueType' => 'duration',
                 'intervalSeconds' => 30,
+                'linuxCommand' => 'printf 1',
             ],
         ]);
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -77,11 +71,11 @@ final class MonitoringApiTest extends ApiTestCase
                 'key' => 'custom.check.latency',
                 'name' => 'Custom latency',
                 'description' => 'Latency of a custom TCP probe.',
-                'category' => 'Custom',
                 'unit' => 'ms',
                 'valueType' => 'float',
                 'intervalSeconds' => 30,
                 'timeoutSeconds' => 5,
+                'linuxCommand' => "printf '12.5'",
                 'isEnabled' => true,
             ],
         ])->toArray();
@@ -112,32 +106,24 @@ final class MonitoringApiTest extends ApiTestCase
         $groupId = $group['id'] ?? null;
         self::assertIsString($groupId);
 
-        $linuxBaseId = $this->templateIdBySlug($client, $token, 'linux-base');
-        $dockerBaseId = $this->templateIdBySlug($client, $token, 'docker-base');
-
         $nodeResponse = $client->request('PATCH', '/api/nodes/'.$node->id(), [
             'auth_bearer' => $token,
-            'json' => [
-                'groups' => [$groupId],
-                'monitoringTemplateIds' => [$linuxBaseId, $dockerBaseId],
-            ],
+            'json' => ['groups' => [$groupId]],
         ])->toArray();
-        $nodeMonitoringTemplates = $nodeResponse['monitoringTemplates'] ?? null;
-        self::assertIsArray($nodeMonitoringTemplates);
-        self::assertCount(2, $nodeMonitoringTemplates);
+        self::assertArrayNotHasKey('monitoringTemplates', $nodeResponse);
 
         $updatedGroup = $client->request('PATCH', '/api/node-groups/'.$groupId, [
             'auth_bearer' => $token,
-            'json' => ['monitoringTemplateIds' => [$templateId, $dockerBaseId]],
+            'json' => ['monitoringTemplateIds' => [$templateId]],
         ])->toArray();
         $updatedGroupMonitoringTemplates = $updatedGroup['monitoringTemplates'] ?? null;
         self::assertIsArray($updatedGroupMonitoringTemplates);
-        self::assertCount(2, $updatedGroupMonitoringTemplates);
+        self::assertCount(1, $updatedGroupMonitoringTemplates);
 
         $storedNode = self::getContainer()->get(NodeRepository::class)->find($node->id());
         self::assertInstanceOf(Node::class, $storedNode);
         $resolved = (new EffectiveNodeMonitoringResolver())->resolve($storedNode);
-        self::assertSame(['custom-tcp-template', 'docker-base', 'linux-base'], array_map(
+        self::assertSame(['custom-tcp-template'], array_map(
             static fn ($monitoringTemplate): string => $monitoringTemplate->slug(),
             $resolved->templates,
         ));
@@ -145,15 +131,6 @@ final class MonitoringApiTest extends ApiTestCase
             static fn ($itemDefinition): string => $itemDefinition->key(),
             $resolved->items,
         ));
-
-        $client->request('PATCH', '/api/monitoring-templates/'.$linuxBaseId, [
-            'auth_bearer' => $token,
-            'json' => ['description' => 'Denied'],
-        ]);
-        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-
-        $client->request('DELETE', '/api/item-definitions/'.$this->itemIdByKey($client, $token, 'system.cpu.usage'), ['auth_bearer' => $token]);
-        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
 
         $client->request('PATCH', '/api/item-definitions/'.$itemId, [
             'auth_bearer' => $token,
@@ -187,6 +164,50 @@ final class MonitoringApiTest extends ApiTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testItemsRequireAtLeastOneValidOsCommandAndSupportBothPlatforms(): void
+    {
+        $client = self::createJsonClient();
+        $token = $this->login($client, $this->createUser('commands@example.com', SystemRole::ADMIN)->getUserIdentifier());
+
+        $client->request('POST', '/api/item-definitions', [
+            'auth_bearer' => $token,
+            'json' => ['key' => 'custom.none', 'name' => 'None', 'valueType' => 'integer', 'intervalSeconds' => 30, 'timeoutSeconds' => 5],
+        ]);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        foreach ([
+            ['key' => 'custom.linux', 'linuxCommand' => 'printf 1'],
+            ['key' => 'custom.windows', 'windowsCommand' => 'Write-Output 1'],
+            ['key' => 'custom.cross', 'linuxCommand' => 'printf 1', 'windowsCommand' => 'Write-Output 1'],
+        ] as $definition) {
+            $client->request('POST', '/api/item-definitions', [
+                'auth_bearer' => $token,
+                'json' => ['name' => $definition['key'], 'valueType' => 'integer', 'intervalSeconds' => 30, 'timeoutSeconds' => 5, ...$definition],
+            ]);
+            self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        }
+
+        self::assertSame(3, $this->entityManager()->getRepository(\App\Entity\Monitoring\ItemDefinition::class)->count([]));
+    }
+
+    public function testManagingCommandsRequiresTheDedicatedPermissionInAdditionToCreate(): void
+    {
+        $client = self::createJsonClient();
+        $operator = $this->createUser('limited@example.com');
+        $this->assignPermissions($operator, [PermissionCode::ITEM_DEFINITIONS_CREATE]);
+        $token = $this->login($client, $operator->getUserIdentifier());
+
+        $client->request('POST', '/api/item-definitions', [
+            'auth_bearer' => $token,
+            'json' => [
+                'key' => 'custom.denied', 'name' => 'Denied', 'valueType' => 'integer',
+                'intervalSeconds' => 30, 'timeoutSeconds' => 5, 'linuxCommand' => 'printf 1',
+            ],
+        ]);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
     private function createUser(string $email, ?string $roleSlug = null): User
     {
         $now = new \DateTimeImmutable();
@@ -202,6 +223,23 @@ final class MonitoringApiTest extends ApiTestCase
         return $user;
     }
 
+    /** @param list<string> $permissions */
+    private function assignPermissions(User $user, array $permissions): void
+    {
+        $repository = self::getContainer()->get(PermissionRepository::class);
+        $role = new Role('Limited item creator', 'limited-item-creator', null, false, new \DateTimeImmutable());
+        $entities = [];
+        foreach ($permissions as $code) {
+            $permission = $repository->findOneBy(['code' => $code]);
+            self::assertNotNull($permission);
+            $entities[] = $permission;
+        }
+        $role->replacePermissions($entities, new \DateTimeImmutable());
+        $user->replaceBusinessRoles([$role], new \DateTimeImmutable());
+        $this->entityManager()->persist($role);
+        $this->entityManager()->flush();
+    }
+
     private function login(Client $client, string $email): string
     {
         $response = $client->request('POST', '/api/auth/login', ['json' => ['email' => $email, 'password' => self::PASSWORD]]);
@@ -210,42 +248,6 @@ final class MonitoringApiTest extends ApiTestCase
         self::assertIsString($token);
 
         return $token;
-    }
-
-    private function templateIdBySlug(Client $client, string $token, string $slug): string
-    {
-        $payload = $client->request('GET', '/api/monitoring-templates?itemsPerPage=100', ['auth_bearer' => $token])->toArray();
-        $items = $payload['items'] ?? null;
-        self::assertIsArray($items);
-        foreach ($items as $template) {
-            self::assertIsArray($template);
-            if (($template['slug'] ?? null) === $slug) {
-                $id = $template['id'] ?? null;
-                self::assertIsString($id);
-
-                return $id;
-            }
-        }
-
-        self::fail(\sprintf('Monitoring template "%s" not found in API payload.', $slug));
-    }
-
-    private function itemIdByKey(Client $client, string $token, string $key): string
-    {
-        $payload = $client->request('GET', '/api/item-definitions?itemsPerPage=100', ['auth_bearer' => $token])->toArray();
-        $items = $payload['items'] ?? null;
-        self::assertIsArray($items);
-        foreach ($items as $item) {
-            self::assertIsArray($item);
-            if (($item['key'] ?? null) === $key) {
-                $id = $item['id'] ?? null;
-                self::assertIsString($id);
-
-                return $id;
-            }
-        }
-
-        self::fail(\sprintf('Item definition "%s" not found in API payload.', $key));
     }
 
     private static function createJsonClient(): Client

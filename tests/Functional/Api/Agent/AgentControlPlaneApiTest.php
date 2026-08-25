@@ -15,13 +15,11 @@ use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Entity\Rbac\Role;
 use App\Entity\User\User;
-use App\Repository\Monitoring\MonitoringTemplateRepository;
 use App\Repository\Rbac\PermissionRepository;
 use App\Security\Auth\TokenGenerator;
 use App\Security\Auth\TokenHasher;
 use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
-use App\Service\Monitoring\MonitoringCatalogSynchronizer;
 use App\Tests\Functional\Support\RbacTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -46,7 +44,6 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         $schemaTool->dropDatabase();
         $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
         $this->initializeRbac();
-        self::getContainer()->get(MonitoringCatalogSynchronizer::class)->synchronize();
         self::ensureKernelShutdown();
     }
 
@@ -78,18 +75,10 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         self::assertSame('srv-agent-01', $nodePayload['hostname'] ?? null);
         self::assertSame($enrollment['agentId'], $agentPayload['id'] ?? null);
         self::assertSame('0.1.0', $agentPayload['version'] ?? null);
-        self::assertSame([
-            'custom.latency',
-            'system.cpu.usage',
-            'system.disk.usage',
-            'system.load.1',
-            'system.load.15',
-            'system.load.5',
-            'system.memory.usage',
-            'system.network.rx',
-            'system.network.tx',
-            'system.uptime',
-        ], array_column($itemsPayload, 'key'));
+        self::assertSame(['custom.latency'], array_column($itemsPayload, 'key'));
+        self::assertIsArray($itemsPayload[0]);
+        self::assertSame(['shell' => 'bash', 'command' => 'printf 12.5'], $itemsPayload[0]['execution'] ?? null);
+        self::assertArrayNotHasKey('windowsCommand', $itemsPayload[0]);
         self::assertNotContains('custom.disabled.metric', array_column($itemsPayload, 'key'));
         self::assertStringNotContainsString('secretHash', json_encode($payload, \JSON_THROW_ON_ERROR));
         self::assertStringNotContainsString('tokenHash', json_encode($payload, \JSON_THROW_ON_ERROR));
@@ -115,6 +104,50 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         ]);
 
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_MODIFIED);
+    }
+
+    public function testAgentWithoutGroupReceivesNoItemsAndWindowsReceivesOnlyPowerShell(): void
+    {
+        $client = self::createJsonClient();
+        $emptyEnrollment = $this->enrollAgent($client);
+        $empty = $client->request('GET', '/api/agent/config', ['auth_bearer' => $emptyEnrollment['agentToken']])->toArray();
+        self::assertSame([], $empty['items'] ?? null);
+
+        $windowsEnrollment = $this->enrollAgent($client, 'windows');
+        $windowsNode = $this->nodeById($windowsEnrollment['nodeId']);
+        $this->attachEffectiveMonitoringScenario($windowsNode);
+        $windows = $client->request('GET', '/api/agent/config', ['auth_bearer' => $windowsEnrollment['agentToken']])->toArray();
+        $items = $windows['items'] ?? null;
+        self::assertIsArray($items);
+        self::assertCount(1, $items);
+        self::assertIsArray($items[0]);
+        self::assertSame(['shell' => 'powershell', 'command' => 'Write-Output 12.5'], $items[0]['execution'] ?? null);
+        self::assertArrayNotHasKey('linuxCommand', $items[0]);
+    }
+
+    public function testConfigEtagChangesOnlyWhenTheEffectiveLinuxCommandChanges(): void
+    {
+        $client = self::createJsonClient();
+        $enrollment = $this->enrollAgent($client);
+        $node = $this->nodeById($enrollment['nodeId']);
+        $item = $this->attachEffectiveMonitoringScenario($node);
+
+        $initial = $client->request('GET', '/api/agent/config', ['auth_bearer' => $enrollment['agentToken']])->getHeaders(false)['etag'][0] ?? null;
+        self::assertIsString($initial);
+        $now = new \DateTimeImmutable('2026-08-20T11:00:00+00:00');
+        $item = $this->entityManager()->find(ItemDefinition::class, $item->id());
+        self::assertInstanceOf(ItemDefinition::class, $item);
+        $item->update($item->key(), $item->name(), $item->description(), $item->unit(), $item->valueType(), 15, 3, 'printf 12.5', 'Write-Output 99', true, $now);
+        $this->entityManager()->flush();
+        $unchanged = $client->request('GET', '/api/agent/config', ['auth_bearer' => $enrollment['agentToken']])->getHeaders(false)['etag'][0] ?? null;
+        self::assertSame($initial, $unchanged);
+
+        $item = $this->entityManager()->find(ItemDefinition::class, $item->id());
+        self::assertInstanceOf(ItemDefinition::class, $item);
+        $item->update($item->key(), $item->name(), $item->description(), $item->unit(), $item->valueType(), 15, 3, 'printf 42', 'Write-Output 99', true, $now->modify('+1 second'));
+        $this->entityManager()->flush();
+        $changed = $client->request('GET', '/api/agent/config', ['auth_bearer' => $enrollment['agentToken']])->getHeaders(false)['etag'][0] ?? null;
+        self::assertNotSame($initial, $changed);
     }
 
     public function testAgentConfigRejectsMissingInvalidRevokedAndUserTokens(): void
@@ -204,14 +237,14 @@ final class AgentControlPlaneApiTest extends ApiTestCase
     }
 
     /** @return array{nodeId: string, agentId: string, agentToken: string} */
-    private function enrollAgent(Client $client): array
+    private function enrollAgent(Client $client, string $os = 'linux'): array
     {
         $rawEnrollmentToken = $this->persistEnrollmentToken();
         $response = $client->request('POST', '/api/agents/enroll', [
             'json' => [
                 'enrollmentToken' => $rawEnrollmentToken,
-                'hostname' => 'srv-agent-01',
-                'os' => 'linux',
+                'hostname' => 'srv-agent-'.('linux' === $os ? '01' : $os),
+                'os' => $os,
                 'architecture' => 'x86_64',
                 'agentVersion' => '0.1.0',
             ],
@@ -226,25 +259,19 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         return $payload;
     }
 
-    private function attachEffectiveMonitoringScenario(Node $node): void
+    private function attachEffectiveMonitoringScenario(Node $node): ItemDefinition
     {
         $entityManager = $this->entityManager();
-        $repository = self::getContainer()->get(MonitoringTemplateRepository::class);
-
-        $linuxBase = $repository->findOneBy(['slug' => 'linux-base']);
-        self::assertInstanceOf(MonitoringTemplate::class, $linuxBase);
-
-        $customItem = new ItemDefinition('custom.latency', 'Latency', null, 'Custom', 'ms', ItemValueType::FLOAT, 15, 3, false, true, new \DateTimeImmutable('2026-08-20T10:00:00+00:00'));
-        $disabledItem = new ItemDefinition('custom.disabled.metric', 'Disabled metric', null, 'Custom', null, ItemValueType::FLOAT, 30, null, false, false, new \DateTimeImmutable('2026-08-20T10:00:00+00:00'));
-        $customTemplate = new MonitoringTemplate('Custom Template', 'custom-template', null, false, true, new \DateTimeImmutable('2026-08-20T10:01:00+00:00'));
-        $disabledTemplate = new MonitoringTemplate('Disabled Template', 'disabled-template', null, false, false, new \DateTimeImmutable('2026-08-20T10:01:00+00:00'));
+        $customItem = new ItemDefinition('custom.latency', 'Latency', null, 'ms', ItemValueType::FLOAT, 15, 3, 'printf 12.5', 'Write-Output 12.5', true, new \DateTimeImmutable('2026-08-20T10:00:00+00:00'));
+        $disabledItem = new ItemDefinition('custom.disabled.metric', 'Disabled metric', null, null, ItemValueType::FLOAT, 30, null, 'printf 0', null, false, new \DateTimeImmutable('2026-08-20T10:00:00+00:00'));
+        $customTemplate = new MonitoringTemplate('Custom Template', 'custom-template', null, true, new \DateTimeImmutable('2026-08-20T10:01:00+00:00'));
+        $disabledTemplate = new MonitoringTemplate('Disabled Template', 'disabled-template', null, false, new \DateTimeImmutable('2026-08-20T10:01:00+00:00'));
         $customTemplate->replaceItemDefinitions([$customItem, $disabledItem], new \DateTimeImmutable('2026-08-20T10:02:00+00:00'));
         $disabledTemplate->replaceItemDefinitions([$customItem], new \DateTimeImmutable('2026-08-20T10:02:00+00:00'));
 
         $group = new NodeGroup('Inherited Group', null, new \DateTimeImmutable('2026-08-20T10:03:00+00:00'));
-        $group->replaceMonitoringTemplates([$linuxBase, $customTemplate, $disabledTemplate], new \DateTimeImmutable('2026-08-20T10:04:00+00:00'));
+        $group->replaceMonitoringTemplates([$customTemplate, $disabledTemplate], new \DateTimeImmutable('2026-08-20T10:04:00+00:00'));
         $node->replaceGroups([$group]);
-        $node->replaceMonitoringTemplates([$linuxBase, $customTemplate]);
 
         $entityManager->persist($customItem);
         $entityManager->persist($disabledItem);
@@ -252,6 +279,8 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         $entityManager->persist($disabledTemplate);
         $entityManager->persist($group);
         $entityManager->flush();
+
+        return $customItem;
     }
 
     private function persistEnrollmentToken(): string
