@@ -8,6 +8,7 @@ use App\Entity\Alert\AlertRule;
 use App\Repository\Incident\IncidentRepository;
 use App\Repository\Node\NodeRepository;
 use App\Service\Incident\IncidentManager;
+use App\Service\Maintenance\MaintenanceResolver;
 use App\Service\Metrics\ItemDefinitionMetricQueryFactory;
 use App\Service\Metrics\MetricLabelFilters;
 use App\Service\Metrics\VictoriaMetricsClientInterface;
@@ -26,6 +27,7 @@ final readonly class AlertEvaluationService
         private AlertRuleEvaluator $evaluator,
         private IncidentRepository $incidents,
         private IncidentManager $incidentManager,
+        private MaintenanceResolver $maintenanceResolver,
         private ClockInterface $clock,
         private LoggerInterface $logger,
     ) {
@@ -38,6 +40,10 @@ final readonly class AlertEvaluationService
 
         foreach ($this->nodes->findAll() as $node) {
             ++$counts['nodes'];
+            if ($this->maintenanceResolver->isInMaintenance($node)) {
+                continue;
+            }
+
             $rules = $this->resolver->getEffectiveAlertRules($node);
             $counts['rules'] += \count($rules);
             $rulesByItem = [];

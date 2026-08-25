@@ -7,6 +7,7 @@ namespace App\Tests\Integration\DataFixtures;
 use App\DataFixtures\Rbac\RbacFixtures;
 use App\DataFixtures\User\UserFixtures;
 use App\Entity\Agent\Agent;
+use App\Entity\Maintenance\MaintenanceWindow;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
@@ -185,6 +186,16 @@ final class DevFixturesTest extends KernelTestCase
         self::assertSame(['example-linux'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $linuxServers->monitoringTemplates()->toArray()));
     }
 
+    public function testMaintenanceFixturesAreClearlyScopedDevelopmentExamples(): void
+    {
+        $windows = $this->entityManager->getRepository(MaintenanceWindow::class)->findAll();
+        self::assertCount(2, $windows);
+
+        $names = array_map(static fn (MaintenanceWindow $window): string => $window->name(), $windows);
+        sort($names);
+        self::assertSame(['Example production upgrade', 'Example web node patch'], $names);
+    }
+
     public function testNoRawSecretIsPresentInTheSeededData(): void
     {
         self::assertSame(0, $this->countRows('enrollment_tokens'), 'Fixtures must not create enrollment tokens.');
@@ -218,6 +229,7 @@ final class DevFixturesTest extends KernelTestCase
             'node_groups' => $this->countRows('node_groups'),
             'monitoring_templates' => $this->countRows('monitoring_templates'),
             'item_definitions' => $this->countRows('item_definitions'),
+            'maintenance_windows' => $this->countRows('maintenance_windows'),
             'agents' => $this->countRows('agents'),
         ];
     }

@@ -101,6 +101,7 @@ be deleted or have the role removed.
 | Nodes | `nodes.read`, `nodes.update` |
 | Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
 | Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `item_definitions.manage_commands`, `metrics.read`, `incidents.read` |
+| Maintenance | `maintenance_windows.read`, `maintenance_windows.create`, `maintenance_windows.update`, `maintenance_windows.delete` |
 | Enrollment | `enrollment_tokens.create` |
 | Audit | `audit_logs.read` |
 
@@ -110,8 +111,8 @@ The initial system roles are:
 | --- | --- |
 | Super Admin | Every permission; protected and non-deletable |
 | Admin | Every permission |
-| Operator | Node read/update, full node-group management, `metrics.read`, and `incidents.read` |
-| Viewer | `nodes.read`, `node_groups.read`, `metrics.read`, and `incidents.read` |
+| Operator | Node read/update, full node-group management, `metrics.read`, `incidents.read`, and maintenance read/create/update |
+| Viewer | `nodes.read`, `node_groups.read`, `metrics.read`, `incidents.read`, and `maintenance_windows.read` |
 
 All system roles are non-deletable. Admin, Operator, and Viewer permission
 mappings may be adjusted through `PATCH /api/roles/{id}`; running
@@ -135,11 +136,10 @@ upsert behavior is implemented by the standard REST endpoints today.
 ## Audit logs
 
 Osira records insert, update, removal, association, and dissociation events for
-the control-plane `User`, `Role`, `Permission`, `Node`, `NodeGroup`, `Agent`, and
-`EnrollmentToken` entities. Audit rows use `audit_*` tables in the same
+the control-plane `User`, `Role`, `Permission`, `Node`, `NodeGroup`,
+`MonitoringTemplate`, `ItemDefinition`, `MaintenanceWindow`, `Incident`, `Agent`,
+`AgentCredential`, and `EnrollmentToken` entities. Audit rows use `audit_*` tables in the same
 PostgreSQL database and transaction as the corresponding business change.
-`AgentCredential` is deliberately excluded because its lifecycle is purely
-technical and contains credential material.
 
 Authenticated HTTP changes include the user's ULID, e-mail address, client IP,
 and firewall context when available. Console changes use the Symfony command
@@ -328,6 +328,31 @@ The public range-query contract is:
 `GET /api/nodes/{id}/metrics` is the node-centric snapshot endpoint. It returns
 the current values of every compatible enabled `ItemDefinition` inherited from
 the enabled templates assigned to that Node's groups.
+
+## Maintenance windows
+
+Maintenance windows are planned periods during which targeted Nodes are
+intentionally under maintenance. They are managed through:
+
+- `GET /api/maintenance-windows`
+- `GET /api/maintenance-windows/{id}`
+- `POST /api/maintenance-windows`
+- `PATCH /api/maintenance-windows/{id}`
+- `DELETE /api/maintenance-windows/{id}`
+
+A window has `name`, optional `description`, `startsAt`, `endsAt`, `isEnabled`,
+and Node/NodeGroup scopes. API inputs require explicit timezone offsets; dates
+are persisted and returned in UTC. A Node is in maintenance when at least one
+enabled window has started, has not ended, and targets that Node directly or
+through any of its groups. Multiple matching group windows are all effective,
+deduplicated by window, and returned in deterministic order by the resolver.
+
+Alert evaluation checks maintenance before reading metrics or evaluating rules
+for a Node. Active maintenance suppresses new incidents only. It does not
+resolve an existing `FIRING` incident, does not convert `NO_DATA` or
+VictoriaMetrics errors into recovery, and does not delete incident history.
+When maintenance ends, normal evaluation resumes; if the condition is still
+firing and no active incident exists, Osira opens a new incident.
 
 The shared read/write contract for future ingestion is a single generic series:
 

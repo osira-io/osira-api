@@ -60,6 +60,8 @@ final class ApiDocumentationTest extends ApiTestCase
         $agentCredentialRevokePath = self::objectAt($paths, '/api/agent-credentials/{id}/revoke');
         $incidentCollectionPath = self::objectAt($paths, '/api/incidents');
         $incidentItemPath = self::objectAt($paths, '/api/incidents/{id}');
+        $maintenanceWindowCollectionPath = self::objectAt($paths, '/api/maintenance-windows');
+        $maintenanceWindowItemPath = self::objectAt($paths, '/api/maintenance-windows/{id}');
 
         self::assertArrayHasKey('patch', $nodePath);
         self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
@@ -92,6 +94,12 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $incidentItemPath);
         self::assertArrayNotHasKey('post', $incidentCollectionPath);
         self::assertStringContainsString('alertRule', json_encode($incidentCollectionPath, \JSON_THROW_ON_ERROR));
+        self::assertArrayHasKey('get', $maintenanceWindowCollectionPath);
+        self::assertArrayHasKey('post', $maintenanceWindowCollectionPath);
+        self::assertArrayHasKey('get', $maintenanceWindowItemPath);
+        self::assertArrayHasKey('patch', $maintenanceWindowItemPath);
+        self::assertArrayHasKey('delete', $maintenanceWindowItemPath);
+        self::assertStringContainsString('suppress new incidents', json_encode($maintenanceWindowCollectionPath, \JSON_THROW_ON_ERROR));
 
         $components = self::objectAt($document, 'components');
         $schemas = self::objectAt($components, 'schemas');
@@ -152,6 +160,7 @@ final class ApiDocumentationTest extends ApiTestCase
             'ItemDefinition',
             'Metric',
             'Incident',
+            'MaintenanceWindow',
             'EnrollmentToken',
             'AgentEnrollment',
             'AgentConfig',
