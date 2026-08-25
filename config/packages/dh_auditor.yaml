@@ -22,6 +22,7 @@ dh_auditor:
                 App\Entity\Monitoring\ItemDefinition: ~
                 App\Entity\Maintenance\MaintenanceWindow: ~
                 App\Entity\Incident\Incident: ~
+                App\Entity\Incident\IncidentActivity: ~
                 App\Entity\Agent\Agent: ~
                 App\Entity\Agent\AgentCredential:
                     ignored_columns:

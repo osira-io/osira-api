@@ -6,6 +6,7 @@ namespace App\Repository\Incident;
 
 use App\Entity\Incident\Incident;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Types\UlidType;
@@ -52,9 +53,10 @@ final class IncidentRepository extends ServiceEntityRepository
     public function createFilteredQueryBuilder(array $filters): QueryBuilder
     {
         $qb = $this->createQueryBuilder('incident')
-            ->addSelect('node', 'alertRule')
+            ->addSelect('node', 'alertRule', 'acknowledgedBy')
             ->join('incident.node', 'node')
             ->join('incident.alertRule', 'alertRule')
+            ->leftJoin('incident.acknowledgedBy', 'acknowledgedBy')
             ->orderBy('incident.firstTriggeredAt', 'DESC')
             ->addOrderBy('incident.id', 'ASC');
         foreach (['status', 'severity'] as $field) {
@@ -77,12 +79,31 @@ final class IncidentRepository extends ServiceEntityRepository
     public function findWithRelations(Ulid $id): ?Incident
     {
         $incident = $this->createQueryBuilder('incident')
-            ->addSelect('node', 'alertRule')
+            ->addSelect('node', 'alertRule', 'acknowledgedBy')
             ->join('incident.node', 'node')
             ->join('incident.alertRule', 'alertRule')
+            ->leftJoin('incident.acknowledgedBy', 'acknowledgedBy')
             ->andWhere('incident.id = :id')
             ->setParameter('id', $id, UlidType::NAME)
             ->getQuery()->getOneOrNullResult();
+
+        return $incident instanceof Incident ? $incident : null;
+    }
+
+    public function findForInteraction(Ulid $id, ?LockMode $lockMode = null): ?Incident
+    {
+        $query = $this->createQueryBuilder('incident')
+            ->addSelect('node', 'alertRule', 'acknowledgedBy')
+            ->join('incident.node', 'node')
+            ->join('incident.alertRule', 'alertRule')
+            ->leftJoin('incident.acknowledgedBy', 'acknowledgedBy')
+            ->andWhere('incident.id = :id')
+            ->setParameter('id', $id, UlidType::NAME)
+            ->getQuery();
+        if (null !== $lockMode) {
+            $query->setLockMode($lockMode);
+        }
+        $incident = $query->getOneOrNullResult();
 
         return $incident instanceof Incident ? $incident : null;
     }

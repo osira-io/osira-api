@@ -13,7 +13,9 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Node\Node;
 use App\Entity\User\User;
+use App\Factory\Incident\IncidentActivityFactory;
 use App\Factory\Incident\IncidentFactory;
+use App\Security\Rbac\PermissionCode;
 use App\Security\Rbac\SystemRole;
 use App\Tests\Functional\Support\RbacTestTrait;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -88,6 +90,133 @@ final class IncidentApiTest extends ApiTestCase
 
         $this->expectException(UniqueConstraintViolationException::class);
         $em->flush();
+    }
+
+    public function testHumanWorkflowAcknowledgesCommentsAndBuildsAStableTimeline(): void
+    {
+        [$incident, $viewer, $operator] = $this->workflowSubjects();
+        $client = self::createClient(defaultOptions: ['headers' => ['accept' => 'application/json', 'content-type' => 'application/json']]);
+        $viewerToken = $this->login($client, $viewer->getUserIdentifier());
+        $operatorToken = $this->login($client, $operator->getUserIdentifier());
+
+        $client->request('POST', '/api/incidents/'.$incident->id().'/acknowledge', ['auth_bearer' => $viewerToken, 'json' => []]);
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        $client->request('POST', '/api/incidents/'.$incident->id().'/comments', ['auth_bearer' => $viewerToken, 'json' => ['message' => 'No write access']]);
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+
+        $acknowledged = $client->request('POST', '/api/incidents/'.$incident->id().'/acknowledge', [
+            'auth_bearer' => $operatorToken,
+            'json' => ['message' => '  I am taking ownership  '],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        self::assertSame('firing', $acknowledged['status'] ?? null);
+        $acknowledgedBy = $acknowledged['acknowledgedBy'] ?? null;
+        self::assertIsArray($acknowledgedBy);
+        self::assertSame((string) $operator->id(), $acknowledgedBy['id'] ?? null);
+        self::assertNotNull($acknowledged['acknowledgedAt'] ?? null);
+
+        $client->request('POST', '/api/incidents/'.$incident->id().'/acknowledge', ['auth_bearer' => $operatorToken, 'json' => []]);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+
+        $comment = $client->request('POST', '/api/incidents/'.$incident->id().'/comments', [
+            'auth_bearer' => $operatorToken,
+            'json' => ['message' => '  Restart in progress  '],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        self::assertSame('Restart in progress', $comment['message'] ?? null);
+        $commentActor = $comment['actor'] ?? null;
+        self::assertIsArray($commentActor);
+        self::assertSame((string) $operator->id(), $commentActor['id'] ?? null);
+
+        $client->request('POST', '/api/incidents/'.$incident->id().'/comments', ['auth_bearer' => $operatorToken, 'json' => ['message' => '   ']]);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        $timeline = $client->request('GET', '/api/incidents/'.$incident->id().'/activities?itemsPerPage=2&page=1', ['auth_bearer' => $viewerToken])->toArray();
+        $metadata = $timeline['metadata'] ?? null;
+        $timelineItems = $timeline['items'] ?? null;
+        self::assertIsArray($metadata);
+        self::assertIsArray($timelineItems);
+        self::assertSame(3, $metadata['totalItems'] ?? null);
+        self::assertSame(['opened', 'acknowledged'], array_column($timelineItems, 'type'));
+        $acknowledgementItem = $timelineItems[1] ?? null;
+        self::assertIsArray($acknowledgementItem);
+        self::assertSame('I am taking ownership', $acknowledgementItem['message'] ?? null);
+        $timelineActor = $acknowledgementItem['actor'] ?? null;
+        self::assertIsArray($timelineActor);
+        self::assertSame((string) $operator->id(), $timelineActor['id'] ?? null);
+        $secondPage = $client->request('GET', '/api/incidents/'.$incident->id().'/activities?itemsPerPage=2&page=2', ['auth_bearer' => $viewerToken])->toArray();
+        $secondPageItems = $secondPage['items'] ?? null;
+        self::assertIsArray($secondPageItems);
+        self::assertSame(['comment'], array_column($secondPageItems, 'type'));
+    }
+
+    public function testResolvedIncidentRejectsAcknowledgementButAcceptsCommentsAndKeepsExistingHistory(): void
+    {
+        [$incident, , $operator] = $this->workflowSubjects();
+        $client = self::createClient(defaultOptions: ['headers' => ['accept' => 'application/json', 'content-type' => 'application/json']]);
+        $token = $this->login($client, $operator->getUserIdentifier());
+
+        $client->request('POST', '/api/incidents/'.$incident->id().'/acknowledge', ['auth_bearer' => $token, 'json' => []]);
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $this->entityManager()->clear();
+        $managedIncident = $this->entityManager()->find(\App\Entity\Incident\Incident::class, $incident->id());
+        self::assertInstanceOf(\App\Entity\Incident\Incident::class, $managedIncident);
+        $managedIncident->resolve('40', new \DateTimeImmutable());
+        $this->entityManager()->flush();
+
+        $payload = $client->request('GET', '/api/incidents/'.$incident->id(), ['auth_bearer' => $token])->toArray();
+        self::assertSame('resolved', $payload['status'] ?? null);
+        $acknowledgedBy = $payload['acknowledgedBy'] ?? null;
+        self::assertIsArray($acknowledgedBy);
+        self::assertSame((string) $operator->id(), $acknowledgedBy['id'] ?? null);
+        $client->request('POST', '/api/incidents/'.$incident->id().'/comments', ['auth_bearer' => $token, 'json' => ['message' => 'Post-resolution note']]);
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $client->request('POST', '/api/incidents/'.$incident->id().'/acknowledge', ['auth_bearer' => $token, 'json' => []]);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+
+        $timeline = $client->request('GET', '/api/incidents/'.$incident->id().'/activities?itemsPerPage=10', ['auth_bearer' => $token])->toArray();
+        $timelineItems = $timeline['items'] ?? [];
+        self::assertIsArray($timelineItems);
+        $types = array_column($timelineItems, 'type');
+        sort($types);
+        self::assertSame(['acknowledged', 'comment', 'opened', 'resolved'], $types);
+        $timestamps = array_column($timelineItems, 'createdAt');
+        $sortedTimestamps = $timestamps;
+        sort($sortedTimestamps);
+        self::assertSame($sortedTimestamps, $timestamps);
+    }
+
+    public function testDatabaseConstraintMakesConcurrentAcknowledgementUnique(): void
+    {
+        [$incident, , $operator] = $this->workflowSubjects();
+        $secondOperator = $this->createUser('workflow-operator-2@example.com', SystemRole::OPERATOR);
+        $factory = new IncidentActivityFactory();
+        $now = new \DateTimeImmutable();
+        $this->entityManager()->persist($factory->acknowledged($incident, $operator, null, $now));
+        $this->entityManager()->persist($factory->acknowledged($incident, $secondOperator, 'racing request', $now));
+
+        $this->expectException(UniqueConstraintViolationException::class);
+        $this->entityManager()->flush();
+    }
+
+    /** @return array{\App\Entity\Incident\Incident, User, User} */
+    private function workflowSubjects(): array
+    {
+        $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
+        $node = new Node('workflow-node', null, 'linux', 'amd64', $now, $now);
+        $item = new ItemDefinition('custom.workflow', 'Workflow', null, null, ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
+        $rule = new AlertRule('Workflow alert', 'Workflow alert', 'Workflow alert', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::WARNING, true, $now);
+        $incident = (new IncidentFactory())->create($node, $rule, [], '95', $now);
+        $em = $this->entityManager();
+        foreach ([$node, $item, $rule, $incident] as $entity) {
+            $em->persist($entity);
+        }
+        $em->flush();
+        $viewer = $this->createUser('workflow-viewer@example.com', SystemRole::VIEWER);
+        $operator = $this->createUser('workflow-operator@example.com', SystemRole::OPERATOR);
+        self::assertContains(PermissionCode::INCIDENTS_READ, array_keys(PermissionCode::catalog()));
+
+        return [$incident, $viewer, $operator];
     }
 
     private function createUser(string $email, string $role): User

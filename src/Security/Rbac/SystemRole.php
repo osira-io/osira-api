@@ -39,6 +39,8 @@ final class SystemRole
                     PermissionCode::NODE_GROUPS_DELETE,
                     PermissionCode::METRICS_READ,
                     PermissionCode::INCIDENTS_READ,
+                    PermissionCode::INCIDENTS_ACKNOWLEDGE,
+                    PermissionCode::INCIDENTS_COMMENT,
                     PermissionCode::MAINTENANCE_WINDOWS_READ,
                     PermissionCode::MAINTENANCE_WINDOWS_CREATE,
                     PermissionCode::MAINTENANCE_WINDOWS_UPDATE,

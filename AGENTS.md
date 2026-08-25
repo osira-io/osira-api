@@ -124,6 +124,9 @@ Examples:
 - VictoriaMetrics is the source of metric samples; PostgreSQL stores only incident business state, never evaluation samples.
 - Incident identity is the combination of Node, AlertRule, and normalized metric dimension labels.
 - `NO_DATA` and VictoriaMetrics/backend errors never resolve an active incident.
+- Incident `FIRING`/`RESOLVED` status is automatic and cannot be changed by users; V1 has no manual resolve, close, or reopen.
+- Acknowledgement and comments are human interactions independent from lifecycle status. Acknowledgement is unique and only allowed while `FIRING`; comments remain allowed after resolution.
+- The incident timeline is a product feature. DH Auditor remains the separate technical/security trace and must not replace the product timeline.
 
 ## Monitoring product model
 

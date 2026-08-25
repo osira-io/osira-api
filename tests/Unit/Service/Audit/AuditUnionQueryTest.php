@@ -20,9 +20,9 @@ final class AuditUnionQueryTest extends TestCase
     {
         $query = new AuditUnionQuery(self::criteria());
 
-        // 12 allow-listed tables joined pairwise -> 11 UNION ALL occurrences.
-        self::assertSame(11, substr_count($query->selectSql(), 'UNION ALL'));
-        foreach (['audit_users', 'audit_roles', 'audit_permissions', 'audit_nodes', 'audit_node_groups', 'audit_monitoring_templates', 'audit_item_definitions', 'audit_maintenance_windows', 'audit_agents', 'audit_agent_credentials', 'audit_enrollment_tokens', 'audit_incidents'] as $table) {
+        // 13 allow-listed tables joined pairwise -> 12 UNION ALL occurrences.
+        self::assertSame(12, substr_count($query->selectSql(), 'UNION ALL'));
+        foreach (['audit_users', 'audit_roles', 'audit_permissions', 'audit_nodes', 'audit_node_groups', 'audit_monitoring_templates', 'audit_item_definitions', 'audit_maintenance_windows', 'audit_agents', 'audit_agent_credentials', 'audit_enrollment_tokens', 'audit_incidents', 'audit_incident_activities'] as $table) {
             self::assertStringContainsString('FROM '.$table, $query->selectSql());
         }
     }

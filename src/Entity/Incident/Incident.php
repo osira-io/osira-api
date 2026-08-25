@@ -7,6 +7,7 @@ namespace App\Entity\Incident;
 use App\Entity\Alert\AlertRule;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Node\Node;
+use App\Entity\User\User;
 use App\Repository\Incident\IncidentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -47,6 +48,8 @@ final class Incident
         $this->status = IncidentStatus::FIRING;
         $this->occurrences = 1;
         $this->resolvedAt = null;
+        $this->acknowledgedAt = null;
+        $this->acknowledgedBy = null;
         $this->updatedAt = $createdAt;
     }
 
@@ -55,6 +58,13 @@ final class Incident
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $resolvedAt;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $acknowledgedAt;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'RESTRICT')]
+    private ?User $acknowledgedBy;
 
     #[ORM\Column]
     private int $occurrences;
@@ -82,6 +92,19 @@ final class Incident
         $this->lastValue = $lastValue;
         $this->resolvedAt = $now;
         $this->activeIdentity = null;
+        $this->updatedAt = $now;
+    }
+
+    public function acknowledge(User $actor, \DateTimeImmutable $now): void
+    {
+        if (IncidentStatus::FIRING !== $this->status) {
+            throw new \LogicException('Only a firing incident can be acknowledged.');
+        }
+        if (null !== $this->acknowledgedAt) {
+            throw new \LogicException('The incident is already acknowledged.');
+        }
+        $this->acknowledgedAt = $now;
+        $this->acknowledgedBy = $actor;
         $this->updatedAt = $now;
     }
 
@@ -149,6 +172,16 @@ final class Incident
     public function lastValue(): string
     {
         return $this->lastValue;
+    }
+
+    public function acknowledgedAt(): ?\DateTimeImmutable
+    {
+        return $this->acknowledgedAt;
+    }
+
+    public function acknowledgedBy(): ?User
+    {
+        return $this->acknowledgedBy;
     }
 
     public function occurrences(): int

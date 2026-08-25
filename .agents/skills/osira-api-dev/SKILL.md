@@ -45,6 +45,7 @@ Read only the references that matter for the current task:
 - Do not invent custom infrastructure when the installed Symfony/API Platform/Doctrine stack already provides the right convention.
 - Do not expose arbitrary MetricsQL or other infrastructure-native query languages directly in public Osira APIs.
 - Keep alert evaluation server-side and periodic; `NO_DATA` or backend errors must never recover an incident.
+- Keep incident `FIRING`/`RESOLVED` lifecycle automatic. Human acknowledgement and comments are separate, the product timeline is distinct from DH Auditor, and V1 has no manual resolution.
 - Keep monitoring bootstrap empty and resolve collection only through Item -> Template -> NodeGroup -> Node; never reintroduce system catalogs or direct Template -> Node assignments.
 - Treat Bash/PowerShell command changes as privileged, audited operations and expose only the Node OS-compatible command to an agent.
 - Use the generic VictoriaMetrics `osira_item_value{node_id,item_key,...}` contract for every valid custom item key.

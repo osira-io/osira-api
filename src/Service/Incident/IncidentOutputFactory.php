@@ -9,6 +9,10 @@ use App\Entity\Incident\Incident;
 
 final readonly class IncidentOutputFactory
 {
+    public function __construct(private IncidentActivityOutputFactory $activityOutputFactory)
+    {
+    }
+
     public function create(Incident $incident): IncidentOutput
     {
         return new IncidentOutput(
@@ -25,6 +29,8 @@ final readonly class IncidentOutputFactory
             $incident->firstTriggeredAt(),
             $incident->lastTriggeredAt(),
             $incident->resolvedAt(),
+            $incident->acknowledgedAt(),
+            null !== $incident->acknowledgedBy() ? $this->activityOutputFactory->actor($incident->acknowledgedBy()) : null,
             $incident->lastValue(),
             $incident->occurrences(),
             $incident->createdAt(),

@@ -11,6 +11,7 @@ use App\Entity\Incident\IncidentStatus;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Node\Node;
+use App\Entity\User\User;
 use App\Factory\Incident\IncidentFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -51,6 +52,26 @@ final class IncidentLifecycleTest extends TestCase
             $factory->create($node, $rule, ['device' => '/dev/sda1'], '91', $now)->activeIdentity(),
             $factory->create($node, $rule, ['device' => '/data'], '91', $now)->activeIdentity(),
         );
+    }
+
+    public function testAcknowledgementDoesNotControlLifecycleAndAReopenedIncidentIsIndependent(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
+        [$node, $rule] = $this->subjects($now);
+        $factory = new IncidentFactory();
+        $actor = new User('operator@example.com', ['ROLE_USER'], $now);
+        $first = $factory->create($node, $rule, [], '95', $now);
+
+        $first->acknowledge($actor, $now->modify('+1 minute'));
+        self::assertSame(IncidentStatus::FIRING, $first->status());
+        $first->resolve('80', $now->modify('+2 minutes'));
+        self::assertSame($actor, $first->acknowledgedBy());
+        self::assertNotNull($first->acknowledgedAt());
+
+        $reopened = $factory->create($node, $rule, [], '96', $now->modify('+3 minutes'));
+        self::assertNotSame((string) $first->id(), (string) $reopened->id());
+        self::assertNull($reopened->acknowledgedAt());
+        self::assertSame(IncidentStatus::FIRING, $reopened->status());
     }
 
     /** @return array{Node, AlertRule} */
