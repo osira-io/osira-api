@@ -21,12 +21,12 @@ final class MonitoringFactoriesTest extends TestCase
             '  CUSTOM.CHECK.LATENCY  ',
             '  Custom latency  ',
             '  Probe latency  ',
-            '  Custom  ',
             '  ms  ',
             ItemValueType::FLOAT,
             30,
             5,
-            false,
+            '  printf 12.5  ',
+            null,
             true,
             $now,
         );
@@ -34,11 +34,11 @@ final class MonitoringFactoriesTest extends TestCase
         self::assertSame('custom.check.latency', $item->key());
         self::assertSame('Custom latency', $item->name());
         self::assertSame('Probe latency', $item->description());
-        self::assertSame('Custom', $item->category());
         self::assertSame('ms', $item->unit());
         self::assertSame(ItemValueType::FLOAT, $item->valueType());
         self::assertSame(30, $item->intervalSeconds());
         self::assertSame(5, $item->timeoutSeconds());
+        self::assertSame('  printf 12.5  ', $item->linuxCommand());
     }
 
     public function testMonitoringTemplateFactoryNormalizesCreationValues(): void
@@ -46,7 +46,7 @@ final class MonitoringFactoriesTest extends TestCase
         $factory = new MonitoringTemplateFactory();
         $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
 
-        $template = $factory->create('  Linux Base  ', null, '  Core metrics  ', false, true, $now);
+        $template = $factory->create('  Linux Base  ', null, '  Core metrics  ', true, $now);
 
         self::assertSame('Linux Base', $template->name());
         self::assertSame('linux-base', $template->slug());
@@ -94,6 +94,15 @@ final class MonitoringFactoriesTest extends TestCase
 
         $this->expectException(ResourceValidationException::class);
         $factory->normalizeNullablePositive(0, 'timeout');
+    }
+
+    public function testItemDefinitionFactoryRejectsMissingAndInvalidCommands(): void
+    {
+        $factory = new ItemDefinitionFactory();
+        $now = new \DateTimeImmutable();
+
+        $this->expectException(ResourceValidationException::class);
+        $factory->create('custom.invalid', 'Invalid', null, null, ItemValueType::INTEGER, 30, 5, null, null, true, $now);
     }
 
     public function testMonitoringTemplateFactoryRejectsBlankName(): void

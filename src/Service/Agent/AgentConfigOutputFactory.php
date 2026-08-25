@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Agent;
 
 use App\Dto\Agent\AgentConfigAgentOutput;
+use App\Dto\Agent\AgentConfigExecutionOutput;
 use App\Dto\Agent\AgentConfigItemOutput;
 use App\Dto\Agent\AgentConfigNodeOutput;
 use App\Dto\Agent\AgentConfigOutput;
@@ -35,7 +36,10 @@ final readonly class AgentConfigOutputFactory
                 $item->unit(),
                 $item->intervalSeconds(),
                 $item->timeoutSeconds(),
-                [],
+                new AgentConfigExecutionOutput(
+                    'windows' === mb_strtolower($node->os()) ? 'powershell' : 'bash',
+                    $item->commandForOs($node->os()) ?? throw new \LogicException('Effective monitoring items must have an OS-compatible command.'),
+                ),
             ),
             $effectiveMonitoring->items,
         );
@@ -48,7 +52,7 @@ final readonly class AgentConfigOutputFactory
             'items' => array_map(static fn (AgentConfigItemOutput $item): array => [
                 'intervalSeconds' => $item->intervalSeconds,
                 'key' => $item->key,
-                'parameters' => $item->parameters,
+                'execution' => ['command' => $item->execution->command, 'shell' => $item->execution->shell],
                 'timeoutSeconds' => $item->timeoutSeconds,
                 'unit' => $item->unit,
                 'valueType' => $item->valueType,

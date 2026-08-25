@@ -14,28 +14,57 @@ final class ItemDefinitionFactory
         string $key,
         string $name,
         ?string $description,
-        ?string $category,
         ?string $unit,
         ItemValueType $valueType,
         int $intervalSeconds,
         ?int $timeoutSeconds,
-        bool $isSystem,
+        ?string $linuxCommand,
+        ?string $windowsCommand,
         bool $isEnabled,
         \DateTimeImmutable $createdAt,
     ): ItemDefinition {
+        $linuxCommand = $this->normalizeCommand($linuxCommand);
+        $windowsCommand = $this->normalizeCommand($windowsCommand);
+        $this->assertAtLeastOneCommand($linuxCommand, $windowsCommand);
+
         return new ItemDefinition(
             $this->normalizeKey($key),
             $this->normalizeName($name),
             $this->normalizeNullable($description),
-            $this->normalizeNullable($category),
             $this->normalizeNullable($unit),
             $valueType,
             $this->normalizePositive($intervalSeconds, 'The interval must be greater than zero.'),
             $this->normalizeNullablePositive($timeoutSeconds, 'The timeout must be greater than zero when provided.'),
-            $isSystem,
+            $linuxCommand,
+            $windowsCommand,
             $isEnabled,
             $createdAt,
         );
+    }
+
+    public function normalizeCommand(?string $command): ?string
+    {
+        if (null === $command) {
+            return null;
+        }
+        if (str_contains($command, "\0")) {
+            throw new ResourceValidationException('Collection commands cannot contain NUL bytes.');
+        }
+        if (mb_strlen($command) > 20000) {
+            throw new ResourceValidationException('Collection commands cannot exceed 20000 characters.');
+        }
+        if ('' === trim($command)) {
+            throw new ResourceValidationException('A collection command cannot be empty when provided.');
+        }
+
+        return $command;
+    }
+
+    public function assertAtLeastOneCommand(?string $linuxCommand, ?string $windowsCommand): void
+    {
+        if (null === $linuxCommand && null === $windowsCommand) {
+            throw new ResourceValidationException('At least one Linux or Windows collection command must be provided.');
+        }
     }
 
     public function normalizeKey(string $key): string

@@ -10,6 +10,7 @@ parameters:
     osira.enrollment_token_ttl: 900
     osira.victoriametrics_url: '%env(VICTORIAMETRICS_URL)%'
     osira.victoriametrics_timeout: '%env(float:VICTORIAMETRICS_TIMEOUT)%'
+    osira.alert_evaluation_interval: '%env(int:ALERT_EVALUATION_INTERVAL_SECONDS)%'
 
 services:
     # default configuration for services in *this* file
@@ -42,6 +43,10 @@ services:
             $httpClient: '@http_client'
             $baseUrl: '%osira.victoriametrics_url%'
             $timeoutSeconds: '%osira.victoriametrics_timeout%'
+
+    App\Scheduler\Alert\AlertSchedule:
+        arguments:
+            $intervalSeconds: '%osira.alert_evaluation_interval%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

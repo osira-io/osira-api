@@ -30,9 +30,6 @@ final class ItemDefinition
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description;
 
-    #[ORM\Column(length: 128, nullable: true)]
-    private ?string $category;
-
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $unit;
 
@@ -45,8 +42,11 @@ final class ItemDefinition
     #[ORM\Column(nullable: true)]
     private ?int $timeoutSeconds;
 
-    #[ORM\Column(options: ['default' => false])]
-    private readonly bool $isSystem;
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $linuxCommand;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $windowsCommand;
 
     #[ORM\Column(options: ['default' => true])]
     private bool $isEnabled;
@@ -65,12 +65,12 @@ final class ItemDefinition
         string $key,
         string $name,
         ?string $description,
-        ?string $category,
         ?string $unit,
         ItemValueType $valueType,
         int $intervalSeconds,
         ?int $timeoutSeconds,
-        bool $isSystem,
+        ?string $linuxCommand,
+        ?string $windowsCommand,
         bool $isEnabled,
         \DateTimeImmutable $now,
     ) {
@@ -78,12 +78,12 @@ final class ItemDefinition
         $this->key = $key;
         $this->name = $name;
         $this->description = $description;
-        $this->category = $category;
         $this->unit = $unit;
         $this->valueType = $valueType;
         $this->intervalSeconds = $intervalSeconds;
         $this->timeoutSeconds = $timeoutSeconds;
-        $this->isSystem = $isSystem;
+        $this->linuxCommand = $linuxCommand;
+        $this->windowsCommand = $windowsCommand;
         $this->isEnabled = $isEnabled;
         $this->createdAt = $now;
         $this->updatedAt = $now;
@@ -94,44 +94,24 @@ final class ItemDefinition
         string $key,
         string $name,
         ?string $description,
-        ?string $category,
         ?string $unit,
         ItemValueType $valueType,
         int $intervalSeconds,
         ?int $timeoutSeconds,
+        ?string $linuxCommand,
+        ?string $windowsCommand,
         bool $isEnabled,
         \DateTimeImmutable $now,
     ): void {
         $this->key = $key;
         $this->name = $name;
         $this->description = $description;
-        $this->category = $category;
         $this->unit = $unit;
         $this->valueType = $valueType;
         $this->intervalSeconds = $intervalSeconds;
         $this->timeoutSeconds = $timeoutSeconds;
-        $this->isEnabled = $isEnabled;
-        $this->updatedAt = $now;
-    }
-
-    public function synchronize(
-        string $name,
-        ?string $description,
-        ?string $category,
-        ?string $unit,
-        ItemValueType $valueType,
-        int $intervalSeconds,
-        ?int $timeoutSeconds,
-        bool $isEnabled,
-        \DateTimeImmutable $now,
-    ): void {
-        $this->name = $name;
-        $this->description = $description;
-        $this->category = $category;
-        $this->unit = $unit;
-        $this->valueType = $valueType;
-        $this->intervalSeconds = $intervalSeconds;
-        $this->timeoutSeconds = $timeoutSeconds;
+        $this->linuxCommand = $linuxCommand;
+        $this->windowsCommand = $windowsCommand;
         $this->isEnabled = $isEnabled;
         $this->updatedAt = $now;
     }
@@ -156,11 +136,6 @@ final class ItemDefinition
         return $this->description;
     }
 
-    public function category(): ?string
-    {
-        return $this->category;
-    }
-
     public function unit(): ?string
     {
         return $this->unit;
@@ -181,9 +156,23 @@ final class ItemDefinition
         return $this->timeoutSeconds;
     }
 
-    public function isSystem(): bool
+    public function linuxCommand(): ?string
     {
-        return $this->isSystem;
+        return $this->linuxCommand;
+    }
+
+    public function windowsCommand(): ?string
+    {
+        return $this->windowsCommand;
+    }
+
+    public function commandForOs(string $os): ?string
+    {
+        return match (mb_strtolower(trim($os))) {
+            'linux' => $this->linuxCommand,
+            'windows' => $this->windowsCommand,
+            default => null,
+        };
     }
 
     public function isEnabled(): bool

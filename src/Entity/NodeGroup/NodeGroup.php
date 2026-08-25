@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity\NodeGroup;
 
+use App\Entity\Alert\AlertRule;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Repository\NodeGroup\NodeGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -41,6 +42,10 @@ final class NodeGroup
     #[ORM\InverseJoinColumn(name: 'monitoring_template_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $monitoringTemplates;
 
+    /** @var Collection<int, AlertRule> */
+    #[ORM\ManyToMany(targetEntity: AlertRule::class, mappedBy: 'nodeGroups')]
+    private Collection $alertRules;
+
     public function __construct(string $name, ?string $description, \DateTimeImmutable $now)
     {
         $this->id = new Ulid();
@@ -49,6 +54,7 @@ final class NodeGroup
         $this->createdAt = $now;
         $this->updatedAt = $now;
         $this->monitoringTemplates = new ArrayCollection();
+        $this->alertRules = new ArrayCollection();
     }
 
     public function id(): Ulid
@@ -80,6 +86,19 @@ final class NodeGroup
     public function monitoringTemplates(): Collection
     {
         return $this->monitoringTemplates;
+    }
+
+    /** @return Collection<int, AlertRule> */
+    public function alertRules(): Collection
+    {
+        return $this->alertRules;
+    }
+
+    public function addAlertRule(AlertRule $alertRule): void
+    {
+        if (!$this->alertRules->contains($alertRule)) {
+            $this->alertRules->add($alertRule);
+        }
     }
 
     public function update(string $name, ?string $description, \DateTimeImmutable $now): void

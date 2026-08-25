@@ -10,12 +10,12 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
+use App\Entity\NodeGroup\NodeGroup;
 use App\Entity\User\User;
 use App\Security\Rbac\SystemRole;
 use App\Service\Metrics\VictoriaMetricsClientProxy;
 use App\Service\Metrics\VictoriaMetricsInvalidResponseException;
 use App\Service\Metrics\VictoriaMetricsUnavailableException;
-use App\Service\Monitoring\MonitoringCatalogSynchronizer;
 use App\Tests\Functional\Support\FakeVictoriaMetricsClient;
 use App\Tests\Functional\Support\RbacTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,7 +40,6 @@ final class MetricsApiTest extends ApiTestCase
         $schemaTool->dropDatabase();
         $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
         $this->initializeRbac();
-        self::getContainer()->get(MonitoringCatalogSynchronizer::class)->synchronize();
         self::ensureKernelShutdown();
     }
 
@@ -58,20 +57,22 @@ final class MetricsApiTest extends ApiTestCase
         $client = self::createJsonClient();
         $viewer = $this->createUser('viewer@example.com', SystemRole::VIEWER);
         $token = $this->login($client, $viewer->getUserIdentifier());
-        $node = $this->createNodeWithTemplate('srv-metrics-01', 'linux-base');
+        $node = $this->createNodeWithTemplate('srv-metrics-01');
 
         $fakeClient = new FakeVictoriaMetricsClient();
         $fakeClient->instantResult = [
             FakeVictoriaMetricsClient::sample([
-                '__name__' => 'osira_system_cpu_usage',
+                '__name__' => 'osira_item_value',
                 'node_id' => (string) $node->id(),
+                'item_key' => 'custom.cpu.usage',
                 'device' => 'cpu0',
             ], '42.5'),
         ];
         $fakeClient->rangeResult = [
             FakeVictoriaMetricsClient::series([
-                '__name__' => 'osira_system_disk_usage',
+                '__name__' => 'osira_item_value',
                 'node_id' => (string) $node->id(),
+                'item_key' => 'custom.disk.usage',
                 'device' => 'nvme0n1p1',
             ], [
                 ['2026-08-19T12:00:00+00:00', '77.1'],
@@ -82,22 +83,22 @@ final class MetricsApiTest extends ApiTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
 
         $this->setVictoriaMetricsClient($fakeClient);
-        $instant = $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage', [
+        $instant = $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage', [
             'auth_bearer' => $token,
         ])->toArray();
-        self::assertSame('system.cpu.usage', $instant['itemKey'] ?? null);
+        self::assertSame('custom.cpu.usage', $instant['itemKey'] ?? null);
         self::assertSame((string) $node->id(), $instant['nodeId'] ?? null);
-        self::assertSame([['metricKey' => 'system.cpu.usage', 'labels' => ['device' => 'cpu0'], 'timestamp' => '2026-08-19T12:00:00+00:00', 'value' => '42.5']], $instant['samples'] ?? null);
-        self::assertSame(\sprintf('osira_system_cpu_usage{node_id="%s"}', $node->id()), $fakeClient->queries[0] ?? null);
+        self::assertSame([['metricKey' => 'custom.cpu.usage', 'labels' => ['device' => 'cpu0'], 'timestamp' => '2026-08-19T12:00:00+00:00', 'value' => '42.5']], $instant['samples'] ?? null);
+        self::assertSame(\sprintf('osira_item_value{node_id="%s",item_key="custom.cpu.usage"}', $node->id()), $fakeClient->queries[0] ?? null);
 
         $this->setVictoriaMetricsClient($fakeClient);
-        $range = $client->request('GET', '/api/metrics/query-range?nodeId='.$node->id().'&itemKey=system.disk.usage&from=2026-08-19T12%3A00%3A00%2B00%3A00&to=2026-08-19T12%3A02%3A00%2B00%3A00&stepSeconds=60&device=nvme0n1p1', [
+        $range = $client->request('GET', '/api/metrics/query-range?nodeId='.$node->id().'&itemKey=custom.disk.usage&from=2026-08-19T12%3A00%3A00%2B00%3A00&to=2026-08-19T12%3A02%3A00%2B00%3A00&stepSeconds=60&device=nvme0n1p1', [
             'auth_bearer' => $token,
         ])->toArray();
-        self::assertSame('system.disk.usage', $range['itemKey'] ?? null);
+        self::assertSame('custom.disk.usage', $range['itemKey'] ?? null);
         self::assertSame((string) $node->id(), $range['nodeId'] ?? null);
         self::assertSame([[
-            'metricKey' => 'system.disk.usage',
+            'metricKey' => 'custom.disk.usage',
             'labels' => ['device' => 'nvme0n1p1'],
             'points' => [
                 ['timestamp' => '2026-08-19T12:00:00+00:00', 'value' => '77.1'],
@@ -116,20 +117,20 @@ final class MetricsApiTest extends ApiTestCase
     public function testMetricsEndpointsEnforceDedicatedPermissionsAndStrictValidation(): void
     {
         $client = self::createJsonClient();
-        $node = $this->createNodeWithTemplate('srv-metrics-02', 'linux-base');
+        $node = $this->createNodeWithTemplate('srv-metrics-02');
 
-        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage');
+        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage');
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
 
         $noRoleToken = $this->login($client, $this->createUser('none@example.com')->getUserIdentifier());
-        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage', ['auth_bearer' => $noRoleToken]);
+        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage', ['auth_bearer' => $noRoleToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
 
         $viewerToken = $this->login($client, $this->createUser('viewer2@example.com', SystemRole::VIEWER)->getUserIdentifier());
-        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage&query=up', ['auth_bearer' => $viewerToken]);
+        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage&query=up', ['auth_bearer' => $viewerToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
-        $client->request('GET', '/api/metrics/query-range?nodeId='.$node->id().'&itemKey=system.cpu.usage&from=2026-08-19T12%3A02%3A00%2B00%3A00&to=2026-08-19T12%3A00%3A00%2B00%3A00&stepSeconds=0', ['auth_bearer' => $viewerToken]);
+        $client->request('GET', '/api/metrics/query-range?nodeId='.$node->id().'&itemKey=custom.cpu.usage&from=2026-08-19T12%3A02%3A00%2B00%3A00&to=2026-08-19T12%3A00%3A00%2B00%3A00&stepSeconds=0', ['auth_bearer' => $viewerToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -137,13 +138,13 @@ final class MetricsApiTest extends ApiTestCase
     {
         $client = self::createJsonClient();
         $viewerToken = $this->login($client, $this->createUser('viewer3@example.com', SystemRole::VIEWER)->getUserIdentifier());
-        $node = $this->createNodeWithTemplate('srv-metrics-03', 'linux-base');
+        $node = $this->createNodeWithTemplate('srv-metrics-03');
 
         $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=unknown.metric', ['auth_bearer' => $viewerToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
 
-        $disabledItem = new ItemDefinition('custom.disabled.metric', 'Disabled', null, null, null, ItemValueType::FLOAT, 60, null, false, false, new \DateTimeImmutable());
-        $template = new MonitoringTemplate('Disabled Template', 'disabled-template', null, false, true, new \DateTimeImmutable());
+        $disabledItem = new ItemDefinition('custom.disabled.metric', 'Disabled', null, null, ItemValueType::FLOAT, 60, null, 'printf 0', null, false, new \DateTimeImmutable());
+        $template = new MonitoringTemplate('Disabled Template', 'disabled-template', null, true, new \DateTimeImmutable());
         $template->replaceItemDefinitions([$disabledItem], new \DateTimeImmutable());
         $entityManager = $this->entityManager();
         $entityManager->persist($disabledItem);
@@ -151,9 +152,10 @@ final class MetricsApiTest extends ApiTestCase
         $entityManager->flush();
         $managedNode = $entityManager->find(Node::class, $node->id());
         self::assertInstanceOf(Node::class, $managedNode);
-        $linuxBase = $entityManager->getRepository(MonitoringTemplate::class)->findOneBy(['slug' => 'linux-base']);
-        self::assertInstanceOf(MonitoringTemplate::class, $linuxBase);
-        $managedNode->replaceMonitoringTemplates([$linuxBase, $template]);
+        $group = new NodeGroup('Disabled metrics', null, new \DateTimeImmutable());
+        $group->replaceMonitoringTemplates([$template], new \DateTimeImmutable());
+        $managedNode->replaceGroups([...$managedNode->groups()->toArray(), $group]);
+        $entityManager->persist($group);
         $entityManager->flush();
 
         $client->request('GET', '/api/metrics/query?nodeId='.$managedNode->id().'&itemKey=custom.disabled.metric', ['auth_bearer' => $viewerToken]);
@@ -162,23 +164,30 @@ final class MetricsApiTest extends ApiTestCase
         $unavailable = new FakeVictoriaMetricsClient();
         $unavailable->instantException = new VictoriaMetricsUnavailableException('down');
         $this->setVictoriaMetricsClient($unavailable);
-        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage', ['auth_bearer' => $viewerToken]);
+        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage', ['auth_bearer' => $viewerToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_SERVICE_UNAVAILABLE);
 
         $invalid = new FakeVictoriaMetricsClient();
         $invalid->instantException = new VictoriaMetricsInvalidResponseException('bad');
         $this->setVictoriaMetricsClient($invalid);
-        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=system.cpu.usage', ['auth_bearer' => $viewerToken]);
+        $client->request('GET', '/api/metrics/query?nodeId='.$node->id().'&itemKey=custom.cpu.usage', ['auth_bearer' => $viewerToken]);
         self::assertResponseStatusCodeSame(Response::HTTP_BAD_GATEWAY);
     }
 
-    private function createNodeWithTemplate(string $hostname, string $templateSlug): Node
+    private function createNodeWithTemplate(string $hostname): Node
     {
-        $node = new Node($hostname, null, 'linux', 'x86_64', new \DateTimeImmutable(), new \DateTimeImmutable());
-        $template = $this->entityManager()->getRepository(MonitoringTemplate::class)->findOneBy(['slug' => $templateSlug]);
-        self::assertInstanceOf(MonitoringTemplate::class, $template);
-        $node->replaceMonitoringTemplates([$template]);
-        $this->entityManager()->persist($node);
+        $now = new \DateTimeImmutable();
+        $node = new Node($hostname, null, 'linux', 'x86_64', $now, $now);
+        $cpu = new ItemDefinition('custom.cpu.usage', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 42.5', null, true, $now);
+        $disk = new ItemDefinition('custom.disk.usage', 'Disk', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 77.1', null, true, $now);
+        $template = new MonitoringTemplate('Metrics '.$hostname, 'metrics-'.$hostname, null, true, $now);
+        $template->replaceItemDefinitions([$cpu, $disk], $now);
+        $group = new NodeGroup('Metrics '.$hostname, null, $now);
+        $group->replaceMonitoringTemplates([$template], $now);
+        $node->replaceGroups([$group]);
+        foreach ([$cpu, $disk, $template, $group, $node] as $entity) {
+            $this->entityManager()->persist($entity);
+        }
         $this->entityManager()->flush();
 
         return $node;

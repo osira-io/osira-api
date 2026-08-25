@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity\Monitoring;
 
-use App\Entity\Node\Node;
+use App\Entity\Alert\AlertRule;
 use App\Entity\NodeGroup\NodeGroup;
 use App\Repository\Monitoring\MonitoringTemplateRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -33,9 +33,6 @@ final class MonitoringTemplate
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description;
 
-    #[ORM\Column(options: ['default' => false])]
-    private readonly bool $isSystem;
-
     #[ORM\Column(options: ['default' => true])]
     private bool $isEnabled;
 
@@ -52,19 +49,18 @@ final class MonitoringTemplate
     #[ORM\InverseJoinColumn(name: 'item_definition_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $itemDefinitions;
 
-    /** @var Collection<int, Node> */
-    #[ORM\ManyToMany(targetEntity: Node::class, mappedBy: 'monitoringTemplates')]
-    private Collection $nodes;
-
     /** @var Collection<int, NodeGroup> */
     #[ORM\ManyToMany(targetEntity: NodeGroup::class, mappedBy: 'monitoringTemplates')]
     private Collection $nodeGroups;
+
+    /** @var Collection<int, AlertRule> */
+    #[ORM\ManyToMany(targetEntity: AlertRule::class, mappedBy: 'assignedTemplates')]
+    private Collection $alertRules;
 
     public function __construct(
         string $name,
         string $slug,
         ?string $description,
-        bool $isSystem,
         bool $isEnabled,
         \DateTimeImmutable $now,
     ) {
@@ -72,27 +68,18 @@ final class MonitoringTemplate
         $this->name = $name;
         $this->slug = $slug;
         $this->description = $description;
-        $this->isSystem = $isSystem;
         $this->isEnabled = $isEnabled;
         $this->createdAt = $now;
         $this->updatedAt = $now;
         $this->itemDefinitions = new ArrayCollection();
-        $this->nodes = new ArrayCollection();
         $this->nodeGroups = new ArrayCollection();
+        $this->alertRules = new ArrayCollection();
     }
 
     public function update(string $name, string $slug, ?string $description, bool $isEnabled, \DateTimeImmutable $now): void
     {
         $this->name = $name;
         $this->slug = $slug;
-        $this->description = $description;
-        $this->isEnabled = $isEnabled;
-        $this->updatedAt = $now;
-    }
-
-    public function synchronize(string $name, ?string $description, bool $isEnabled, \DateTimeImmutable $now): void
-    {
-        $this->name = $name;
         $this->description = $description;
         $this->isEnabled = $isEnabled;
         $this->updatedAt = $now;
@@ -130,11 +117,6 @@ final class MonitoringTemplate
         return $this->description;
     }
 
-    public function isSystem(): bool
-    {
-        return $this->isSystem;
-    }
-
     public function isEnabled(): bool
     {
         return $this->isEnabled;
@@ -156,28 +138,23 @@ final class MonitoringTemplate
         return $this->itemDefinitions;
     }
 
-    /** @return Collection<int, Node> */
-    public function nodes(): Collection
-    {
-        return $this->nodes;
-    }
-
     /** @return Collection<int, NodeGroup> */
     public function nodeGroups(): Collection
     {
         return $this->nodeGroups;
     }
 
-    public function addNode(Node $node): void
+    /** @return Collection<int, AlertRule> */
+    public function alertRules(): Collection
     {
-        if (!$this->nodes->contains($node)) {
-            $this->nodes->add($node);
-        }
+        return $this->alertRules;
     }
 
-    public function removeNode(Node $node): void
+    public function addAlertRule(AlertRule $alertRule): void
     {
-        $this->nodes->removeElement($node);
+        if (!$this->alertRules->contains($alertRule)) {
+            $this->alertRules->add($alertRule);
+        }
     }
 
     public function addNodeGroup(NodeGroup $nodeGroup): void

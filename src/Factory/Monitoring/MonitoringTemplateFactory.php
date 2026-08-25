@@ -13,7 +13,6 @@ final class MonitoringTemplateFactory
         string $name,
         ?string $slug,
         ?string $description,
-        bool $isSystem,
         bool $isEnabled,
         \DateTimeImmutable $createdAt,
     ): MonitoringTemplate {
@@ -23,7 +22,6 @@ final class MonitoringTemplateFactory
             $normalizedName,
             $this->normalizeSlug($slug ?? $normalizedName),
             $this->normalizeDescription($description),
-            $isSystem,
             $isEnabled,
             $createdAt,
         );

@@ -100,7 +100,7 @@ be deleted or have the role removed.
 | Access control | `roles.read`, `roles.create`, `roles.update`, `roles.delete`, `permissions.read` |
 | Nodes | `nodes.read`, `nodes.update` |
 | Node groups | `node_groups.read`, `node_groups.create`, `node_groups.update`, `node_groups.delete` |
-| Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `metrics.read` |
+| Monitoring | `monitoring_templates.read`, `monitoring_templates.create`, `monitoring_templates.update`, `monitoring_templates.delete`, `item_definitions.read`, `item_definitions.create`, `item_definitions.update`, `item_definitions.delete`, `item_definitions.manage_commands`, `metrics.read`, `incidents.read` |
 | Enrollment | `enrollment_tokens.create` |
 | Audit | `audit_logs.read` |
 
@@ -110,8 +110,8 @@ The initial system roles are:
 | --- | --- |
 | Super Admin | Every permission; protected and non-deletable |
 | Admin | Every permission |
-| Operator | Node read/update, full node-group management, and `metrics.read` |
-| Viewer | `nodes.read`, `node_groups.read`, and `metrics.read` |
+| Operator | Node read/update, full node-group management, `metrics.read`, and `incidents.read` |
+| Viewer | `nodes.read`, `node_groups.read`, `metrics.read`, and `incidents.read` |
 
 All system roles are non-deletable. Admin, Operator, and Viewer permission
 mappings may be adjusted through `PATCH /api/roles/{id}`; running
@@ -246,8 +246,32 @@ Production
 ```
 
 Groups are available under `/api/node-groups`. They are intended to support
-shared templates and configuration later; templates and inheritance are not
-implemented yet.
+shared monitoring configuration.
+
+## Custom monitoring model
+
+Osira starts with no item, monitoring template, or alert rule. There is no
+Linux, Windows, Docker, `system.*`, or `container.*` product catalog. Development
+fixtures contain a few explicit examples only and are never part of product
+bootstrap.
+
+All effective collection follows one deterministic path:
+
+```text
+ItemDefinition -> MonitoringTemplate -> NodeGroup -> Node
+```
+
+There is no direct Item-to-Node/Group or Template-to-Node assignment. A Node
+without a group carrying an enabled template has zero effective items and its
+agent collects nothing. Items contain a user-provided Bash command for Linux,
+a PowerShell command for Windows, or both. `item_definitions.manage_commands`
+is required in addition to the CRUD permission when commands are created or
+changed; only Super Admin and Admin receive it by default. Command diffs are
+audited. This mechanism is collection only, not remote action or remediation.
+
+V1 time-series values are float, integer, or boolean (normalized to `0`/`1`).
+The legacy `string` enum value remains readable for compatibility but is not an
+effective VictoriaMetrics collector type.
 
 ## Monitoring metrics read API
 
@@ -261,8 +285,8 @@ endpoints:
 
 The two `/api/metrics/*` endpoints require a known Osira `itemKey` and a
 concrete `nodeId`. They do not accept arbitrary MetricsQL. Osira resolves the
-`ItemDefinition`, checks that it is enabled and effectively assigned to the
-target Node, maps it to a VictoriaMetrics selector, executes the read, then
+`ItemDefinition`, checks that it is enabled, metric-compatible, OS-compatible,
+and effective through the Node groups, builds a VictoriaMetrics selector, then
 returns a stable Osira JSON contract.
 
 The public instant-query contract is:
@@ -270,10 +294,10 @@ The public instant-query contract is:
 ```json
 {
   "nodeId": "01K...",
-  "itemKey": "system.cpu.usage",
+  "itemKey": "custom.cpu.usage",
   "samples": [
     {
-      "metricKey": "system.cpu.usage",
+      "metricKey": "custom.cpu.usage",
       "labels": {"device": "cpu0"},
       "timestamp": "2026-08-19T12:00:00+00:00",
       "value": "42.5"
@@ -287,10 +311,10 @@ The public range-query contract is:
 ```json
 {
   "nodeId": "01K...",
-  "itemKey": "system.disk.usage",
+  "itemKey": "custom.disk.usage",
   "series": [
     {
-      "metricKey": "system.disk.usage",
+      "metricKey": "custom.disk.usage",
       "labels": {"device": "nvme0n1p1"},
       "points": [
         {"timestamp": "2026-08-19T12:00:00+00:00", "value": "77.1"},
@@ -302,9 +326,21 @@ The public range-query contract is:
 ```
 
 `GET /api/nodes/{id}/metrics` is the node-centric snapshot endpoint. It returns
-the current values of every enabled `ItemDefinition` that is effectively applied
-to that Node through direct template assignment and/or inherited `NodeGroup`
-templates.
+the current values of every compatible enabled `ItemDefinition` inherited from
+the enabled templates assigned to that Node's groups.
+
+The shared read/write contract for future ingestion is a single generic series:
+
+```text
+osira_item_value{node_id="01K...",item_key="custom.nginx.connections",...} 42
+```
+
+`item_key` is always a controlled label value, never a metric-name fragment or
+user-supplied MetricsQL. Additional non-infrastructure labels are metric
+dimensions. `/api/agent/config` includes each effective item in its canonical
+ETag and exposes only `execution: {shell, command}` for the Node OS: `bash` on
+Linux, `powershell` on Windows. Changing an ineffective other-OS command does
+not alter that Node's ETag.
 
 VictoriaMetrics connectivity is configured by environment variables:
 
@@ -338,6 +374,42 @@ plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
 `POST /api/agents/enroll` therefore intentionally remains public at the user
 authentication layer.
+
+## Alert evaluation and incidents
+
+Alert evaluation runs only on the server. `osira:alerts:evaluate` and the
+`scheduler_alerts` worker both delegate to the same batch service; the scheduler
+frequency is configured with `ALERT_EVALUATION_INTERVAL_SECONDS` (60 seconds by
+default). Run the periodic worker with:
+
+```bash
+php bin/console messenger:consume scheduler_alerts
+```
+
+For every Node, the engine uses only rules returned by
+`EffectiveNodeMonitoringResolver::getEffectiveAlertRules()`. It groups those
+rules by ItemDefinition and reads their required ranges from the existing
+VictoriaMetrics client. User-provided MetricsQL is never accepted.
+
+V1 `requiredOccurrences` means the number of samples satisfying the trigger
+comparison within the inclusive `evaluationWindowSeconds` interval ending at
+evaluation time. Each VictoriaMetrics dimension series is evaluated separately.
+The incident identity is a SHA-256 key over Node ULID, AlertRule ULID, and sorted
+public dimension labels, so devices, interfaces, and containers never collapse
+into one incident.
+
+An active incident recovers from `gt`/`gte` only below its recovery threshold,
+and from `lt`/`lte` only above it. Equality operators use their logical inverse.
+Without a recovery threshold, the trigger operator's logical inverse is used.
+The boundary is deliberately strict when a recovery threshold exists, providing
+hysteresis (for example, `gt 90`, recovery `80`, resolves only below 80).
+`NO_DATA`, timeouts, unavailable backends, invalid responses, and invalid value
+comparisons never resolve an active incident. PostgreSQL stores only incident
+state and the latest observed value; metric samples remain in VictoriaMetrics.
+
+The read-only API exposes `GET /api/incidents` and `GET /api/incidents/{id}` to
+holders of `incidents.read`. Collection filters are `status`, `severity`,
+`node`, `alertRule`, and `date` (first trigger at or after the timestamp).
 
 ## Development checks
 

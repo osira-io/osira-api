@@ -170,24 +170,19 @@ final class DevFixturesTest extends KernelTestCase
         self::assertSame(0, $this->countRows('agent_credentials'), 'Fixtures must never create a usable AgentCredential.');
     }
 
-    public function testMonitoringCatalogFixturesSeedSystemTemplatesItemsAndAssignments(): void
+    public function testMonitoringFixturesAreClearlyScopedDevelopmentExamples(): void
     {
         $templates = $this->entityManager->getRepository(MonitoringTemplate::class)->findAll();
-        self::assertCount(3, $templates);
-        self::assertSame(15, $this->entityManager->getRepository(ItemDefinition::class)->count([]));
+        self::assertCount(2, $templates);
+        self::assertSame(3, $this->entityManager->getRepository(ItemDefinition::class)->count([]));
 
-        $linuxBase = $this->entityManager->getRepository(MonitoringTemplate::class)->findOneBy(['slug' => 'linux-base']);
+        $linuxBase = $this->entityManager->getRepository(MonitoringTemplate::class)->findOneBy(['slug' => 'example-linux']);
         self::assertInstanceOf(MonitoringTemplate::class, $linuxBase);
-        self::assertTrue($linuxBase->isSystem());
-        self::assertCount(9, $linuxBase->itemDefinitions());
+        self::assertCount(2, $linuxBase->itemDefinitions());
 
         $linuxServers = self::getContainer()->get(NodeGroupRepository::class)->findOneBy(['name' => 'Linux Servers']);
         self::assertInstanceOf(NodeGroup::class, $linuxServers);
-        self::assertSame(['linux-base'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $linuxServers->monitoringTemplates()->toArray()));
-
-        $prodCache = self::getContainer()->get(NodeRepository::class)->findOneBy(['hostname' => 'prod-cache-01']);
-        self::assertInstanceOf(Node::class, $prodCache);
-        self::assertSame(['docker-base'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $prodCache->monitoringTemplates()->toArray()));
+        self::assertSame(['example-linux'], array_map(static fn (MonitoringTemplate $template): string => $template->slug(), $linuxServers->monitoringTemplates()->toArray()));
     }
 
     public function testNoRawSecretIsPresentInTheSeededData(): void

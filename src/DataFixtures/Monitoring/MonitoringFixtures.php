@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace App\DataFixtures\Monitoring;
 
-use App\Entity\Monitoring\MonitoringTemplate;
-use App\Entity\Node\Node;
+use App\DataFixtures\NodeGroup\NodeGroupFixtures;
+use App\Entity\Monitoring\ItemValueType;
 use App\Entity\NodeGroup\NodeGroup;
-use App\Repository\Monitoring\MonitoringTemplateRepository;
-use App\Repository\Node\NodeRepository;
+use App\Factory\Monitoring\ItemDefinitionFactory;
+use App\Factory\Monitoring\MonitoringTemplateFactory;
 use App\Repository\NodeGroup\NodeGroupRepository;
-use App\Service\Monitoring\MonitoringCatalogSynchronizer;
 use DH\Auditor\Auditor;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 
+/** Development examples only. Product bootstrap intentionally creates no monitoring catalog. */
 final class MonitoringFixtures extends Fixture implements DependentFixtureInterface
 {
     public function __construct(
-        private readonly MonitoringCatalogSynchronizer $synchronizer,
-        private readonly MonitoringTemplateRepository $monitoringTemplates,
-        private readonly NodeRepository $nodes,
+        private readonly ItemDefinitionFactory $itemDefinitionFactory,
+        private readonly MonitoringTemplateFactory $monitoringTemplateFactory,
         private readonly NodeGroupRepository $nodeGroups,
         private readonly Auditor $auditor,
     ) {
@@ -30,61 +29,47 @@ final class MonitoringFixtures extends Fixture implements DependentFixtureInterf
     public function load(ObjectManager $manager): void
     {
         $this->auditor->getConfiguration()->disable();
-
-        $this->synchronizer->synchronize();
-
         $now = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
-        $linuxBase = $this->templateBySlug('linux-base');
-        $windowsBase = $this->templateBySlug('windows-base');
-        $dockerBase = $this->templateBySlug('docker-base');
 
-        $linuxServers = $this->groupByName('Linux Servers');
-        $linuxServers->replaceMonitoringTemplates([$linuxBase], $now);
+        $linuxCpu = $this->itemDefinitionFactory->create(
+            'custom.cpu.usage', 'Example CPU usage', 'Development-only example Linux collector.', '%',
+            ItemValueType::FLOAT, 60, 5,
+            "awk '/^cpu / {usage=(\$2+\$4)*100/(\$2+\$4+\$5); print usage}' /proc/stat", null, true, $now,
+        );
+        $serviceStatus = $this->itemDefinitionFactory->create(
+            'custom.service.status', 'Example service status', 'Development-only cross-platform collector.', null,
+            ItemValueType::BOOLEAN, 30, 5,
+            'systemctl is-active --quiet nginx && printf 1 || printf 0',
+            "if ((Get-Service nginx).Status -eq 'Running') { 1 } else { 0 }", true, $now,
+        );
+        $windowsCpu = $this->itemDefinitionFactory->create(
+            'custom.windows.cpu.usage', 'Example Windows CPU usage', 'Development-only example Windows collector.', '%',
+            ItemValueType::FLOAT, 60, 5, null,
+            '(Get-Counter \'\\Processor(_Total)\\% Processor Time\').CounterSamples.CookedValue', true, $now,
+        );
 
-        $windowsServers = $this->groupByName('Windows Servers');
-        $windowsServers->replaceMonitoringTemplates([$windowsBase], $now);
+        $linuxTemplate = $this->monitoringTemplateFactory->create('Example Linux', 'example-linux', 'Development-only Linux example.', true, $now);
+        $linuxTemplate->replaceItemDefinitions([$linuxCpu, $serviceStatus], $now);
+        $windowsTemplate = $this->monitoringTemplateFactory->create('Example Windows', 'example-windows', 'Development-only Windows example.', true, $now);
+        $windowsTemplate->replaceItemDefinitions([$windowsCpu, $serviceStatus], $now);
 
-        $webServers = $this->groupByName('Web Servers');
-        $webServers->replaceMonitoringTemplates([$dockerBase], $now);
+        $linuxGroup = $this->nodeGroups->findOneBy(['name' => 'Linux Servers']);
+        $windowsGroup = $this->nodeGroups->findOneBy(['name' => 'Windows Servers']);
+        \assert($linuxGroup instanceof NodeGroup);
+        \assert($windowsGroup instanceof NodeGroup);
+        $linuxGroup->replaceMonitoringTemplates([$linuxTemplate], $now);
+        $windowsGroup->replaceMonitoringTemplates([$windowsTemplate], $now);
 
-        $prodCache = $this->nodeByHostname('prod-cache-01');
-        $prodCache->replaceMonitoringTemplates([$dockerBase]);
-
+        foreach ([$linuxCpu, $serviceStatus, $windowsCpu, $linuxTemplate, $windowsTemplate] as $entity) {
+            $manager->persist($entity);
+        }
         $manager->flush();
-
         $this->auditor->getConfiguration()->enable();
     }
 
     /** @return array<class-string<\Doctrine\Common\DataFixtures\FixtureInterface>> */
     public function getDependencies(): array
     {
-        return [
-            \App\DataFixtures\NodeGroup\NodeGroupFixtures::class,
-            \App\DataFixtures\Node\NodeFixtures::class,
-        ];
-    }
-
-    private function templateBySlug(string $slug): MonitoringTemplate
-    {
-        $monitoringTemplate = $this->monitoringTemplates->findOneBy(['slug' => $slug]);
-        \assert($monitoringTemplate instanceof MonitoringTemplate);
-
-        return $monitoringTemplate;
-    }
-
-    private function groupByName(string $name): NodeGroup
-    {
-        $nodeGroup = $this->nodeGroups->findOneBy(['name' => $name]);
-        \assert($nodeGroup instanceof NodeGroup);
-
-        return $nodeGroup;
-    }
-
-    private function nodeByHostname(string $hostname): Node
-    {
-        $node = $this->nodes->findOneBy(['hostname' => $hostname]);
-        \assert($node instanceof Node);
-
-        return $node;
+        return [NodeGroupFixtures::class];
     }
 }

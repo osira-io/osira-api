@@ -20,6 +20,7 @@ dh_auditor:
                 App\Entity\NodeGroup\NodeGroup: ~
                 App\Entity\Monitoring\MonitoringTemplate: ~
                 App\Entity\Monitoring\ItemDefinition: ~
+                App\Entity\Incident\Incident: ~
                 App\Entity\Agent\Agent: ~
                 App\Entity\Agent\AgentCredential:
                     ignored_columns:

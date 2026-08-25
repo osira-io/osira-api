@@ -17,40 +17,44 @@ final class UpdateMonitoringInputsTest extends TestCase
         self::assertFalse($input->isKeyProvided());
         self::assertFalse($input->isNameProvided());
         self::assertFalse($input->isDescriptionProvided());
-        self::assertFalse($input->isCategoryProvided());
         self::assertFalse($input->isUnitProvided());
         self::assertFalse($input->isValueTypeProvided());
         self::assertFalse($input->isIntervalSecondsProvided());
         self::assertFalse($input->isTimeoutSecondsProvided());
+        self::assertFalse($input->isLinuxCommandProvided());
+        self::assertFalse($input->isWindowsCommandProvided());
         self::assertFalse($input->isIsEnabledProvided());
 
         $input->setKey('custom.key');
         $input->setName('Custom name');
         $input->setDescription('Custom description');
-        $input->setCategory('System');
         $input->setUnit('ms');
         $input->setValueType('float');
         $input->setIntervalSeconds(30);
         $input->setTimeoutSeconds(5);
+        $input->setLinuxCommand('printf 1');
+        $input->setWindowsCommand('Write-Output 1');
         $input->setIsEnabled(true);
 
         self::assertTrue($input->isKeyProvided());
         self::assertTrue($input->isNameProvided());
         self::assertTrue($input->isDescriptionProvided());
-        self::assertTrue($input->isCategoryProvided());
         self::assertTrue($input->isUnitProvided());
         self::assertTrue($input->isValueTypeProvided());
         self::assertTrue($input->isIntervalSecondsProvided());
         self::assertTrue($input->isTimeoutSecondsProvided());
+        self::assertTrue($input->isLinuxCommandProvided());
+        self::assertTrue($input->isWindowsCommandProvided());
         self::assertTrue($input->isIsEnabledProvided());
         self::assertSame('custom.key', $input->getKey());
         self::assertSame('Custom name', $input->getName());
         self::assertSame('Custom description', $input->getDescription());
-        self::assertSame('System', $input->getCategory());
         self::assertSame('ms', $input->getUnit());
         self::assertSame('float', $input->getValueType());
         self::assertSame(30, $input->getIntervalSeconds());
         self::assertSame(5, $input->getTimeoutSeconds());
+        self::assertSame('printf 1', $input->getLinuxCommand());
+        self::assertSame('Write-Output 1', $input->getWindowsCommand());
         self::assertTrue($input->getIsEnabled());
     }
 

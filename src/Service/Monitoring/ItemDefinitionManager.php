@@ -34,12 +34,12 @@ final readonly class ItemDefinitionManager
             $key,
             $input->name,
             $input->description,
-            $input->category,
             $input->unit,
             ItemValueType::from($input->valueType),
             $input->intervalSeconds,
             $input->timeoutSeconds,
-            false,
+            $input->linuxCommand,
+            $input->windowsCommand,
             $input->isEnabled,
             $this->clock->now(),
         );
@@ -52,22 +52,21 @@ final readonly class ItemDefinitionManager
     public function update(string $id, UpdateItemDefinitionInput $input): ItemDefinition
     {
         $itemDefinition = $this->find($id);
-        if ($itemDefinition->isSystem()) {
-            throw new ResourceConflictException('System item definitions cannot be modified directly.');
-        }
 
         $key = $input->isKeyProvided() ? $this->itemDefinitionFactory->normalizeKey($input->getKey() ?? '') : $itemDefinition->key();
         $name = $input->isNameProvided() ? $this->itemDefinitionFactory->normalizeName($input->getName() ?? '') : $itemDefinition->name();
         $description = $input->isDescriptionProvided() ? $this->itemDefinitionFactory->normalizeNullable($input->getDescription()) : $itemDefinition->description();
-        $category = $input->isCategoryProvided() ? $this->itemDefinitionFactory->normalizeNullable($input->getCategory()) : $itemDefinition->category();
         $unit = $input->isUnitProvided() ? $this->itemDefinitionFactory->normalizeNullable($input->getUnit()) : $itemDefinition->unit();
         $valueType = $input->isValueTypeProvided() ? ItemValueType::from((string) $input->getValueType()) : $itemDefinition->valueType();
         $intervalSeconds = $input->isIntervalSecondsProvided() ? $this->itemDefinitionFactory->normalizePositive($input->getIntervalSeconds() ?? 0, 'The interval must be greater than zero.') : $itemDefinition->intervalSeconds();
         $timeoutSeconds = $input->isTimeoutSecondsProvided() ? $this->itemDefinitionFactory->normalizeNullablePositive($input->getTimeoutSeconds(), 'The timeout must be greater than zero when provided.') : $itemDefinition->timeoutSeconds();
+        $linuxCommand = $input->isLinuxCommandProvided() ? $this->itemDefinitionFactory->normalizeCommand($input->getLinuxCommand()) : $itemDefinition->linuxCommand();
+        $windowsCommand = $input->isWindowsCommandProvided() ? $this->itemDefinitionFactory->normalizeCommand($input->getWindowsCommand()) : $itemDefinition->windowsCommand();
+        $this->itemDefinitionFactory->assertAtLeastOneCommand($linuxCommand, $windowsCommand);
         $isEnabled = $input->isIsEnabledProvided() ? (bool) $input->getIsEnabled() : $itemDefinition->isEnabled();
 
         $this->assertKeyAvailable($key, $itemDefinition);
-        $itemDefinition->update($key, $name, $description, $category, $unit, $valueType, $intervalSeconds, $timeoutSeconds, $isEnabled, $this->clock->now());
+        $itemDefinition->update($key, $name, $description, $unit, $valueType, $intervalSeconds, $timeoutSeconds, $linuxCommand, $windowsCommand, $isEnabled, $this->clock->now());
         $this->entityManager->flush();
 
         return $itemDefinition;
@@ -76,9 +75,6 @@ final readonly class ItemDefinitionManager
     public function delete(string $id): void
     {
         $itemDefinition = $this->find($id);
-        if ($itemDefinition->isSystem()) {
-            throw new ResourceConflictException('System item definitions cannot be deleted.');
-        }
         $this->entityManager->remove($itemDefinition);
         $this->entityManager->flush();
     }

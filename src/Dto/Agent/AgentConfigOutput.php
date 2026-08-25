@@ -34,6 +34,28 @@ final readonly class AgentConfigOutput
         public \DateTimeImmutable $generatedAt,
         public AgentConfigNodeOutput $node,
         public AgentConfigAgentOutput $agent,
+        #[ApiProperty(openapiContext: [
+            'type' => 'array',
+            'items' => [
+                'type' => 'object',
+                'required' => ['key', 'valueType', 'intervalSeconds', 'execution'],
+                'properties' => [
+                    'key' => ['type' => 'string'],
+                    'valueType' => ['type' => 'string', 'enum' => ['float', 'integer', 'boolean']],
+                    'unit' => ['type' => ['string', 'null']],
+                    'intervalSeconds' => ['type' => 'integer'],
+                    'timeoutSeconds' => ['type' => ['integer', 'null']],
+                    'execution' => [
+                        'type' => 'object',
+                        'required' => ['shell', 'command'],
+                        'properties' => [
+                            'shell' => ['type' => 'string', 'enum' => ['bash', 'powershell']],
+                            'command' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ])]
         public array $items,
     ) {
     }

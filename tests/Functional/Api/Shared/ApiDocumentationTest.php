@@ -58,6 +58,8 @@ final class ApiDocumentationTest extends ApiTestCase
         $agentConfigPath = self::objectAt($paths, '/api/agent/config');
         $agentCredentialRotatePath = self::objectAt($paths, '/api/agent/credentials/rotate');
         $agentCredentialRevokePath = self::objectAt($paths, '/api/agent-credentials/{id}/revoke');
+        $incidentCollectionPath = self::objectAt($paths, '/api/incidents');
+        $incidentItemPath = self::objectAt($paths, '/api/incidents/{id}');
 
         self::assertArrayHasKey('patch', $nodePath);
         self::assertStringContainsString('itemsPerPage', json_encode(self::objectAt($paths, '/api/nodes'), \JSON_THROW_ON_ERROR));
@@ -86,6 +88,10 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $agentConfigPath);
         self::assertArrayHasKey('post', $agentCredentialRotatePath);
         self::assertArrayHasKey('post', $agentCredentialRevokePath);
+        self::assertArrayHasKey('get', $incidentCollectionPath);
+        self::assertArrayHasKey('get', $incidentItemPath);
+        self::assertArrayNotHasKey('post', $incidentCollectionPath);
+        self::assertStringContainsString('alertRule', json_encode($incidentCollectionPath, \JSON_THROW_ON_ERROR));
 
         $components = self::objectAt($document, 'components');
         $schemas = self::objectAt($components, 'schemas');
@@ -94,6 +100,15 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringContainsString('environment', $encoded);
         self::assertStringContainsString('tags', $encoded);
         self::assertStringContainsString('groups', $encoded);
+        self::assertStringNotContainsString('monitoringTemplateIds', $encoded);
+        $itemCreate = json_encode(self::objectAt($schemas, 'ItemDefinition.CreateItemDefinitionInput'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('linuxCommand', $itemCreate);
+        self::assertStringContainsString('windowsCommand', $itemCreate);
+        self::assertStringNotContainsString('category', $itemCreate);
+        self::assertStringNotContainsString('isSystem', $itemCreate);
+        $agentConfig = json_encode(self::objectAt($schemas, 'AgentConfig'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('execution', $agentConfig);
+        self::assertStringContainsString('powershell', $agentConfig);
         self::assertArrayHasKey('NodeCollection', $schemas);
         self::assertArrayHasKey('NodeGroupCollection', $schemas);
         self::assertArrayHasKey('CurrentUser', $schemas);
@@ -136,6 +151,7 @@ final class ApiDocumentationTest extends ApiTestCase
             'MonitoringTemplate',
             'ItemDefinition',
             'Metric',
+            'Incident',
             'EnrollmentToken',
             'AgentEnrollment',
             'AgentConfig',
