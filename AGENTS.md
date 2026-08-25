@@ -119,6 +119,8 @@ Examples:
 ## Alert evaluation and incidents
 
 - Alert evaluation runs server-side outside the HTTP request path and only evaluates rules returned by `EffectiveNodeMonitoringResolver::getEffectiveAlertRules()`.
+- Alert evaluation must check `MaintenanceResolver` before metric reads. Active maintenance suppresses new incidents for the Node only.
+- Maintenance must never resolve an existing `FIRING` incident, treat `NO_DATA` or backend errors as recovery, or delete incident history.
 - VictoriaMetrics is the source of metric samples; PostgreSQL stores only incident business state, never evaluation samples.
 - Incident identity is the combination of Node, AlertRule, and normalized metric dimension labels.
 - `NO_DATA` and VictoriaMetrics/backend errors never resolve an active incident.

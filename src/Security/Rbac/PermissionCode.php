@@ -35,6 +35,10 @@ final class PermissionCode
     public const string METRICS_READ = 'metrics.read';
     public const string AGENT_CREDENTIALS_REVOKE = 'agent_credentials.revoke';
     public const string INCIDENTS_READ = 'incidents.read';
+    public const string MAINTENANCE_WINDOWS_READ = 'maintenance_windows.read';
+    public const string MAINTENANCE_WINDOWS_CREATE = 'maintenance_windows.create';
+    public const string MAINTENANCE_WINDOWS_UPDATE = 'maintenance_windows.update';
+    public const string MAINTENANCE_WINDOWS_DELETE = 'maintenance_windows.delete';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -69,6 +73,10 @@ final class PermissionCode
             self::METRICS_READ => self::entry('Read metrics', 'Read VictoriaMetrics-backed metric values through the Osira API.', 'Monitoring'),
             self::AGENT_CREDENTIALS_REVOKE => self::entry('Revoke agent credentials', 'Revoke active control-plane agent credentials.', 'Enrollment'),
             self::INCIDENTS_READ => self::entry('Read incidents', 'View incidents produced by server-side alert evaluation.', 'Monitoring'),
+            self::MAINTENANCE_WINDOWS_READ => self::entry('Read maintenance windows', 'View planned node maintenance windows.', 'Maintenance'),
+            self::MAINTENANCE_WINDOWS_CREATE => self::entry('Create maintenance windows', 'Create planned node maintenance windows.', 'Maintenance'),
+            self::MAINTENANCE_WINDOWS_UPDATE => self::entry('Update maintenance windows', 'Update planned node maintenance windows and target scopes.', 'Maintenance'),
+            self::MAINTENANCE_WINDOWS_DELETE => self::entry('Delete maintenance windows', 'Delete planned node maintenance windows.', 'Maintenance'),
         ];
     }
 
