@@ -73,6 +73,12 @@ final class SlaApiTest extends ApiTestCase
         self::assertSame(99.9, $created['targetPercentage'] ?? null);
         self::assertCount(1, self::arrayValue($created, 'nodes'));
         self::assertCount(1, self::arrayValue($created, 'nodeGroups'));
+
+        $readSla = $client->request('GET', '/api/slas/'.$slaId, ['auth_bearer' => $adminToken])->toArray();
+        self::assertSame($slaId, $readSla['id'] ?? null);
+        self::assertCount(1, self::arrayValue($readSla, 'nodes'));
+        self::assertCount(1, self::arrayValue($readSla, 'nodeGroups'));
+
         $managedSla = self::getContainer()->get(SlaRepository::class)->find(new Ulid($slaId));
         self::assertNotNull($managedSla);
         self::assertCount(2, self::getContainer()->get(NodeRepository::class)->findForGroups(array_values($managedSla->nodeGroups()->toArray())));

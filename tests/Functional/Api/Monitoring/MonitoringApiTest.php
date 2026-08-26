@@ -95,6 +95,19 @@ final class MonitoringApiTest extends ApiTestCase
         self::assertIsString($templateId);
         self::assertSame('custom-tcp-template', $template['slug'] ?? null);
 
+        $readTemplate = $client->request('GET', '/api/monitoring-templates/'.$templateId, ['auth_bearer' => $token])->toArray();
+        self::assertSame($templateId, $readTemplate['id'] ?? null);
+        $readTemplateItems = $readTemplate['itemDefinitions'] ?? null;
+        self::assertIsArray($readTemplateItems);
+        self::assertCount(1, $readTemplateItems);
+        $readTemplateFirstItem = reset($readTemplateItems);
+        self::assertIsArray($readTemplateFirstItem);
+        self::assertSame($itemId, $readTemplateFirstItem['id'] ?? null);
+
+        $readItem = $client->request('GET', '/api/item-definitions/'.$itemId, ['auth_bearer' => $token])->toArray();
+        self::assertSame($itemId, $readItem['id'] ?? null);
+        self::assertSame('custom.check.latency', $readItem['key'] ?? null);
+
         $node = new Node('srv-monitor-01', null, 'linux', 'x86_64', new \DateTimeImmutable(), new \DateTimeImmutable());
         $this->entityManager()->persist($node);
         $this->entityManager()->flush();
@@ -105,6 +118,8 @@ final class MonitoringApiTest extends ApiTestCase
         ])->toArray();
         $groupId = $group['id'] ?? null;
         self::assertIsString($groupId);
+        $readGroup = $client->request('GET', '/api/node-groups/'.$groupId, ['auth_bearer' => $token])->toArray();
+        self::assertSame($groupId, $readGroup['id'] ?? null);
 
         $nodeResponse = $client->request('PATCH', '/api/nodes/'.$node->id(), [
             'auth_bearer' => $token,

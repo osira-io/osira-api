@@ -67,6 +67,11 @@ final class NotificationApiTest extends ApiTestCase
         $updatedRule = $client->request('PATCH', '/api/notification-rules/'.$ruleId, ['auth_bearer' => $token, 'json' => ['isEnabled' => false]])->toArray();
         self::assertFalse($updatedRule['isEnabled'] ?? true);
 
+        $readChannel = $client->request('GET', '/api/notification-channels/'.$channelId, ['auth_bearer' => $token])->toArray();
+        self::assertSame($channelId, $readChannel['id'] ?? null);
+        $readRule = $client->request('GET', '/api/notification-rules/'.$ruleId, ['auth_bearer' => $token])->toArray();
+        self::assertSame($ruleId, $readRule['id'] ?? null);
+
         $client->request('DELETE', '/api/notification-rules/'.$ruleId, ['auth_bearer' => $token]);
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $client->request('DELETE', '/api/notification-channels/'.$channelId, ['auth_bearer' => $token]);
