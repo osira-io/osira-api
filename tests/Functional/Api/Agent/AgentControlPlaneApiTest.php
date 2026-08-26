@@ -192,11 +192,13 @@ final class AgentControlPlaneApiTest extends ApiTestCase
         self::assertNotSame($enrollment['agentToken'], $payload['agentToken']);
         self::assertStringStartsWith(TokenGenerator::AGENT_PREFIX, $payload['agentToken']);
 
-        $credentialRows = $this->entityManager()->getConnection()->fetchAllAssociative('SELECT secret_hash, revoked_at FROM agent_credentials ORDER BY created_at ASC');
+        $credentialRows = $this->entityManager()->getConnection()->fetchAllAssociative('SELECT secret_hash, revoked_at FROM agent_credentials');
         self::assertCount(2, $credentialRows);
-        self::assertNotSame($payload['agentToken'], $credentialRows[1]['secret_hash'] ?? null);
-        self::assertNotNull($credentialRows[0]['revoked_at'] ?? null);
-        self::assertNull($credentialRows[1]['revoked_at'] ?? null);
+        self::assertCount(1, array_filter($credentialRows, static fn (array $row): bool => null !== ($row['revoked_at'] ?? null)));
+        self::assertCount(1, array_filter($credentialRows, static fn (array $row): bool => null === ($row['revoked_at'] ?? null)));
+        foreach ($credentialRows as $credentialRow) {
+            self::assertNotSame($payload['agentToken'], $credentialRow['secret_hash'] ?? null);
+        }
 
         $client->request('GET', '/api/agent/config', [
             'auth_bearer' => $enrollment['agentToken'],

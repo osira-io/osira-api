@@ -11,6 +11,9 @@ parameters:
     osira.victoriametrics_url: '%env(VICTORIAMETRICS_URL)%'
     osira.victoriametrics_timeout: '%env(float:VICTORIAMETRICS_TIMEOUT)%'
     osira.alert_evaluation_interval: '%env(int:ALERT_EVALUATION_INTERVAL_SECONDS)%'
+    osira.notification_frontend_base_url: '%env(NOTIFICATION_FRONTEND_BASE_URL)%'
+    osira.notification_email_from: '%env(NOTIFICATION_EMAIL_FROM)%'
+    osira.notification_webhook_timeout: '%env(float:NOTIFICATION_WEBHOOK_TIMEOUT)%'
 
 services:
     # default configuration for services in *this* file
@@ -47,6 +50,19 @@ services:
     App\Scheduler\Alert\AlertSchedule:
         arguments:
             $intervalSeconds: '%osira.alert_evaluation_interval%'
+
+    App\Service\Notification\WebhookSecretCipher:
+        arguments:
+            $applicationSecret: '%kernel.secret%'
+
+    App\Service\Notification\EmailNotificationSender:
+        arguments:
+            $fromAddress: '%osira.notification_email_from%'
+            $frontendBaseUrl: '%osira.notification_frontend_base_url%'
+
+    App\Service\Notification\WebhookNotificationSender:
+        arguments:
+            $timeoutSeconds: '%osira.notification_webhook_timeout%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

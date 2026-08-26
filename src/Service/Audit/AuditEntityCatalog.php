@@ -14,13 +14,15 @@ use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\MonitoringTemplate;
 use App\Entity\Node\Node;
 use App\Entity\NodeGroup\NodeGroup;
+use App\Entity\Notification\NotificationChannel;
+use App\Entity\Notification\NotificationRule;
 use App\Entity\Rbac\Permission;
 use App\Entity\Rbac\Role;
 use App\Entity\User\User;
 
 final class AuditEntityCatalog
 {
-    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'MaintenanceWindow', 'Agent', 'AgentCredential', 'EnrollmentToken', 'Incident', 'IncidentActivity'];
+    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'MaintenanceWindow', 'Agent', 'AgentCredential', 'EnrollmentToken', 'Incident', 'IncidentActivity', 'NotificationChannel', 'NotificationRule'];
 
     /** @var array<string, class-string> */
     public const array ENTITIES = [
@@ -37,6 +39,8 @@ final class AuditEntityCatalog
         'EnrollmentToken' => EnrollmentToken::class,
         'Incident' => Incident::class,
         'IncidentActivity' => IncidentActivity::class,
+        'NotificationChannel' => NotificationChannel::class,
+        'NotificationRule' => NotificationRule::class,
     ];
 
     /**
@@ -59,6 +63,8 @@ final class AuditEntityCatalog
         'EnrollmentToken' => 'audit_enrollment_tokens',
         'Incident' => 'audit_incidents',
         'IncidentActivity' => 'audit_incident_activities',
+        'NotificationChannel' => 'audit_notification_channels',
+        'NotificationRule' => 'audit_notification_rules',
     ];
 
     /** @return array<string, class-string> */

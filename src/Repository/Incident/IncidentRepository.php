@@ -92,19 +92,20 @@ final class IncidentRepository extends ServiceEntityRepository
 
     public function findForInteraction(Ulid $id, ?LockMode $lockMode = null): ?Incident
     {
-        $query = $this->createQueryBuilder('incident')
-            ->addSelect('node', 'alertRule', 'acknowledgedBy')
-            ->join('incident.node', 'node')
-            ->join('incident.alertRule', 'alertRule')
-            ->leftJoin('incident.acknowledgedBy', 'acknowledgedBy')
-            ->andWhere('incident.id = :id')
-            ->setParameter('id', $id, UlidType::NAME)
-            ->getQuery();
         if (null !== $lockMode) {
+            $query = $this->createQueryBuilder('incident')
+                ->select('incident.id')
+                ->andWhere('incident.id = :id')
+                ->setParameter('id', $id, UlidType::NAME)
+                ->getQuery();
             $query->setLockMode($lockMode);
-        }
-        $incident = $query->getOneOrNullResult();
+            if (null === $query->getOneOrNullResult()) {
+                return null;
+            }
 
-        return $incident instanceof Incident ? $incident : null;
+            return $this->findWithRelations($id);
+        }
+
+        return $this->findWithRelations($id);
     }
 }

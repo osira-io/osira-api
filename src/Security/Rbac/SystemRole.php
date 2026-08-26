@@ -44,12 +44,14 @@ final class SystemRole
                     PermissionCode::MAINTENANCE_WINDOWS_READ,
                     PermissionCode::MAINTENANCE_WINDOWS_CREATE,
                     PermissionCode::MAINTENANCE_WINDOWS_UPDATE,
+                    PermissionCode::NOTIFICATION_CHANNELS_READ,
+                    PermissionCode::NOTIFICATION_RULES_READ,
                 ],
             ],
             self::VIEWER => [
                 'name' => 'Viewer',
                 'description' => 'Reads nodes and node groups without modifying them.',
-                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ, PermissionCode::INCIDENTS_READ, PermissionCode::MAINTENANCE_WINDOWS_READ],
+                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ, PermissionCode::INCIDENTS_READ, PermissionCode::MAINTENANCE_WINDOWS_READ, PermissionCode::NOTIFICATION_CHANNELS_READ, PermissionCode::NOTIFICATION_RULES_READ],
             ],
         ];
     }

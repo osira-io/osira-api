@@ -41,6 +41,14 @@ final class PermissionCode
     public const string MAINTENANCE_WINDOWS_CREATE = 'maintenance_windows.create';
     public const string MAINTENANCE_WINDOWS_UPDATE = 'maintenance_windows.update';
     public const string MAINTENANCE_WINDOWS_DELETE = 'maintenance_windows.delete';
+    public const string NOTIFICATION_CHANNELS_READ = 'notification_channels.read';
+    public const string NOTIFICATION_CHANNELS_CREATE = 'notification_channels.create';
+    public const string NOTIFICATION_CHANNELS_UPDATE = 'notification_channels.update';
+    public const string NOTIFICATION_CHANNELS_DELETE = 'notification_channels.delete';
+    public const string NOTIFICATION_RULES_READ = 'notification_rules.read';
+    public const string NOTIFICATION_RULES_CREATE = 'notification_rules.create';
+    public const string NOTIFICATION_RULES_UPDATE = 'notification_rules.update';
+    public const string NOTIFICATION_RULES_DELETE = 'notification_rules.delete';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -81,6 +89,14 @@ final class PermissionCode
             self::MAINTENANCE_WINDOWS_CREATE => self::entry('Create maintenance windows', 'Create planned node maintenance windows.', 'Maintenance'),
             self::MAINTENANCE_WINDOWS_UPDATE => self::entry('Update maintenance windows', 'Update planned node maintenance windows and target scopes.', 'Maintenance'),
             self::MAINTENANCE_WINDOWS_DELETE => self::entry('Delete maintenance windows', 'Delete planned node maintenance windows.', 'Maintenance'),
+            self::NOTIFICATION_CHANNELS_READ => self::entry('Read notification channels', 'View notification channels without secret material.', 'Notifications'),
+            self::NOTIFICATION_CHANNELS_CREATE => self::entry('Create notification channels', 'Create email and webhook notification channels.', 'Notifications'),
+            self::NOTIFICATION_CHANNELS_UPDATE => self::entry('Update notification channels', 'Update email and webhook notification channels.', 'Notifications'),
+            self::NOTIFICATION_CHANNELS_DELETE => self::entry('Delete notification channels', 'Delete notification channels.', 'Notifications'),
+            self::NOTIFICATION_RULES_READ => self::entry('Read notification rules', 'View incident notification routing rules.', 'Notifications'),
+            self::NOTIFICATION_RULES_CREATE => self::entry('Create notification rules', 'Create incident notification routing rules.', 'Notifications'),
+            self::NOTIFICATION_RULES_UPDATE => self::entry('Update notification rules', 'Update incident notification routing rules.', 'Notifications'),
+            self::NOTIFICATION_RULES_DELETE => self::entry('Delete notification rules', 'Delete incident notification routing rules.', 'Notifications'),
         ];
     }
 

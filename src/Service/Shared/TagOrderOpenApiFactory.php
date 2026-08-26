@@ -30,6 +30,8 @@ final readonly class TagOrderOpenApiFactory implements OpenApiFactoryInterface
         'ItemDefinition',
         'Metric',
         'Incident',
+        'NotificationChannel',
+        'NotificationRule',
         'MaintenanceWindow',
         'EnrollmentToken',
         'AgentEnrollment',

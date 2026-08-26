@@ -23,6 +23,10 @@ dh_auditor:
                 App\Entity\Maintenance\MaintenanceWindow: ~
                 App\Entity\Incident\Incident: ~
                 App\Entity\Incident\IncidentActivity: ~
+                App\Entity\Notification\NotificationChannel:
+                    ignored_columns:
+                        - webhookSecretCiphertext
+                App\Entity\Notification\NotificationRule: ~
                 App\Entity\Agent\Agent: ~
                 App\Entity\Agent\AgentCredential:
                     ignored_columns:

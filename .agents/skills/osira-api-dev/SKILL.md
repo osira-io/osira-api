@@ -36,6 +36,7 @@ Read only the references that matter for the current task:
 - [references/testing.md](references/testing.md) for TDD and test selection.
 - [references/security-rbac.md](references/security-rbac.md) for permissions, secrets, audit-sensitive changes, and metrics-read constraints.
 - [references/monitoring.md](references/monitoring.md) for monitoring catalog and VictoriaMetrics read-path rules.
+- [references/notifications.md](references/notifications.md) for async incident-transition notification, delivery idempotence, and secret-handling rules.
 - [references/quality-gates.md](references/quality-gates.md) for the expected validation checklist.
 
 ## Non-negotiables
@@ -48,5 +49,6 @@ Read only the references that matter for the current task:
 - Keep incident `FIRING`/`RESOLVED` lifecycle automatic. Human acknowledgement and comments are separate, the product timeline is distinct from DH Auditor, and V1 has no manual resolution.
 - Keep monitoring bootstrap empty and resolve collection only through Item -> Template -> NodeGroup -> Node; never reintroduce system catalogs or direct Template -> Node assignments.
 - Treat Bash/PowerShell command changes as privileged, audited operations and expose only the Node OS-compatible command to an agent.
+- Keep incident notifications asynchronous, transition-only, idempotent per Incident/event/channel, and free of exposed webhook secrets.
 - Use the generic VictoriaMetrics `osira_item_value{node_id,item_key,...}` contract for every valid custom item key.
 - Do not add interfaces, factories, traits, or subscribers mechanically.

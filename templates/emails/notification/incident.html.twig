@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<body style="font-family: Arial, sans-serif; color: #172033; line-height: 1.5">
+    <h1 style="font-size: 22px">{{ incident.title }}</h1>
+    <p>The incident is now <strong>{{ event == 'incident.firing' ? 'FIRING' : 'RESOLVED' }}</strong>.</p>
+    <table cellpadding="6" cellspacing="0" style="border-collapse: collapse">
+        <tr><th align="left">Severity</th><td>{{ incident.severity.value|upper }}</td></tr>
+        <tr><th align="left">Node</th><td>{{ node.displayName ?? node.hostname }} ({{ node.hostname }})</td></tr>
+        <tr><th align="left">Alert rule</th><td>{{ alertRule.name }}</td></tr>
+        <tr><th align="left">Observed value</th><td>{{ observedValue }}</td></tr>
+        <tr><th align="left">First triggered</th><td>{{ incident.firstTriggeredAt|date('Y-m-d H:i:s T') }}</td></tr>
+    </table>
+    {% if frontendUrl %}<p><a href="{{ frontendUrl }}">View incident in Osira</a></p>{% endif %}
+</body>
+</html>

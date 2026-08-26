@@ -16,7 +16,7 @@ final class CurrentUserManagerTest extends TestCase
     public function testUpdateLocalePersistsNormalizedLocale(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
-        $clock = $this->createMock(ClockInterface::class);
+        $clock = self::createStub(ClockInterface::class);
         $now = new \DateTimeImmutable('2026-08-19T12:00:00+00:00');
         $clock->method('now')->willReturn($now);
         $entityManager->expects(self::once())->method('flush');
@@ -34,7 +34,7 @@ final class CurrentUserManagerTest extends TestCase
     public function testUpdateLocaleRejectsUnsupportedLocale(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
-        $clock = $this->createMock(ClockInterface::class);
+        $clock = self::createStub(ClockInterface::class);
         $entityManager->expects(self::never())->method('flush');
 
         $manager = new CurrentUserManager($entityManager, $clock);
