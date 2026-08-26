@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Service\Notification;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
@@ -36,7 +37,7 @@ final class IncidentNotificationDispatchTest extends KernelTestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('notify-node', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.cpu', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 95', null, true, $now);
-        $rule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         foreach ([$node, $item, $rule] as $entity) {
             $entityManager->persist($entity);

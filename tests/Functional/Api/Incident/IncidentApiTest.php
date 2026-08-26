@@ -8,6 +8,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
@@ -48,7 +49,7 @@ final class IncidentApiTest extends ApiTestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('incident-node', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.cpu.usage', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
-        $rule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $incident = (new IncidentFactory())->create($node, $rule, [], '95', $now);
         $em = $this->entityManager();
         foreach ([$node, $item, $rule, $incident] as $entity) {
@@ -81,7 +82,7 @@ final class IncidentApiTest extends ApiTestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('concurrent-node', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.disk.usage', 'Disk', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
-        $rule = new AlertRule('Disk high', 'Disk high', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('Disk high', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $factory = new IncidentFactory();
         $em = $this->entityManager();
         foreach ([$node, $item, $rule, $factory->create($node, $rule, ['device' => '/data'], '91', $now), $factory->create($node, $rule, ['device' => '/data'], '92', $now)] as $entity) {
@@ -205,7 +206,7 @@ final class IncidentApiTest extends ApiTestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('workflow-node', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.workflow', 'Workflow', null, null, ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
-        $rule = new AlertRule('Workflow alert', 'Workflow alert', 'Workflow alert', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::WARNING, true, $now);
+        $rule = new AlertRule('Workflow alert', 'Workflow alert', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
         $incident = (new IncidentFactory())->create($node, $rule, [], '95', $now);
         $em = $this->entityManager();
         foreach ([$node, $item, $rule, $incident] as $entity) {

@@ -101,6 +101,11 @@ final class NodeGroup
         }
     }
 
+    public function removeAlertRule(AlertRule $alertRule): void
+    {
+        $this->alertRules->removeElement($alertRule);
+    }
+
     public function update(string $name, ?string $description, \DateTimeImmutable $now): void
     {
         $this->name = $name;

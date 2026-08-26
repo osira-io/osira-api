@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Service\Alert;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Incident\Incident;
 use App\Entity\Incident\IncidentStatus;
@@ -54,7 +55,7 @@ final class AlertEvaluationServiceTest extends KernelTestCase
         $group = new NodeGroup('Evaluation group', null, $now);
         $group->replaceMonitoringTemplates([$template], $now);
         $node->replaceGroups([$group]);
-        $rule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $rule->assignToTemplate($template);
         $em = self::getContainer()->get(EntityManagerInterface::class);
         foreach ([$node, $group, $item, $template, $rule] as $entity) {
@@ -116,7 +117,7 @@ final class AlertEvaluationServiceTest extends KernelTestCase
         $group = new NodeGroup('Disk evaluation group', null, $now);
         $group->replaceMonitoringTemplates([$template], $now);
         $node->replaceGroups([$group]);
-        $rule = new AlertRule('Disk high', 'Disk high', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('Disk high', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $rule->assignToTemplate($template);
         $em = self::getContainer()->get(EntityManagerInterface::class);
         foreach ([$node, $group, $item, $template, $rule] as $entity) {
@@ -221,7 +222,7 @@ final class AlertEvaluationServiceTest extends KernelTestCase
         $group = new NodeGroup('Maintenance evaluation group', null, $now);
         $group->replaceMonitoringTemplates([$template], $now);
         $node->replaceGroups([$group]);
-        $rule = new AlertRule('Maintenance CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('Maintenance CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $rule->assignToTemplate($template);
         $em = self::getContainer()->get(EntityManagerInterface::class);
         foreach ([$node, $group, $item, $template, $rule] as $entity) {

@@ -37,6 +37,7 @@ Read only the references that matter for the current task:
 - [references/security-rbac.md](references/security-rbac.md) for permissions, secrets, audit-sensitive changes, and metrics-read constraints.
 - [references/monitoring.md](references/monitoring.md) for monitoring catalog and VictoriaMetrics read-path rules.
 - [references/notifications.md](references/notifications.md) for async incident-transition notification, delivery idempotence, and secret-handling rules.
+- [references/sla.md](references/sla.md) for Incident-based availability, maintenance exclusion, interval merging, and group aggregation.
 - [references/quality-gates.md](references/quality-gates.md) for the expected validation checklist.
 
 ## Non-negotiables
@@ -50,5 +51,6 @@ Read only the references that matter for the current task:
 - Keep monitoring bootstrap empty and resolve collection only through Item -> Template -> NodeGroup -> Node; never reintroduce system catalogs or direct Template -> Node assignments.
 - Treat Bash/PowerShell command changes as privileged, audited operations and expose only the Node OS-compatible command to an agent.
 - Keep incident notifications asynchronous, transition-only, idempotent per Incident/event/channel, and free of exposed webhook secrets.
+- Calculate SLA reports from Incident and MaintenanceWindow business data only, with merged intervals and eligible-node-second weighting.
 - Use the generic VictoriaMetrics `osira_item_value{node_id,item_key,...}` contract for every valid custom item key.
 - Do not add interfaces, factories, traits, or subscribers mechanically.

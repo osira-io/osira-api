@@ -6,6 +6,8 @@ namespace App\Entity\Alert;
 
 enum AlertOperator: string
 {
+    public const array VALUES = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
+
     case GT = 'gt';
     case GTE = 'gte';
     case LT = 'lt';

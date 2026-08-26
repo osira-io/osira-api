@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service\Monitoring;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
@@ -42,10 +43,10 @@ final class EffectiveNodeMonitoringResolverTest extends TestCase
 
         $group->replaceMonitoringTemplates([$linuxBase, $dockerBase, $disabledTemplate], $now);
 
-        $templateRule = new AlertRule('CPU', 'CPU', 'CPU high', $cpu, AlertOperator::GT, '90', null, 300, 3, AlertSeverity::WARNING, true, $now);
-        $groupRule = new AlertRule('Memory', 'Memory', 'Memory high', $memory, AlertOperator::GT, '90', null, 300, 3, AlertSeverity::WARNING, true, $now);
-        $nodeRule = new AlertRule('Node CPU', 'CPU', 'CPU high', $cpu, AlertOperator::GT, '95', null, 300, 1, AlertSeverity::CRITICAL, true, $now);
-        $disabledRule = new AlertRule('Disabled', 'Disabled', 'Disabled', $cpu, AlertOperator::GT, '1', null, 60, 1, AlertSeverity::INFO, false, $now);
+        $templateRule = new AlertRule('CPU', 'CPU high', $cpu, AlertOperator::GT, '90', null, 300, 3, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
+        $groupRule = new AlertRule('Memory', 'Memory high', $memory, AlertOperator::GT, '90', null, 300, 3, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
+        $nodeRule = new AlertRule('Node CPU', 'CPU high', $cpu, AlertOperator::GT, '95', null, 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
+        $disabledRule = new AlertRule('Disabled', 'Disabled', $cpu, AlertOperator::GT, '1', null, 60, 1, AlertSeverity::INFO, AlertRuleImpactType::AVAILABILITY, false, $now);
         $templateRule->assignToTemplate($linuxBase);
         $groupRule->assignToNodeGroup($group);
         $nodeRule->assignToNode($node);

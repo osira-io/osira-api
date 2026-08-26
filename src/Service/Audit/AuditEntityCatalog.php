@@ -6,6 +6,7 @@ namespace App\Service\Audit;
 
 use App\Entity\Agent\Agent;
 use App\Entity\Agent\AgentCredential;
+use App\Entity\Alert\AlertRule;
 use App\Entity\Enrollment\EnrollmentToken;
 use App\Entity\Incident\Incident;
 use App\Entity\Incident\IncidentActivity;
@@ -18,11 +19,12 @@ use App\Entity\Notification\NotificationChannel;
 use App\Entity\Notification\NotificationRule;
 use App\Entity\Rbac\Permission;
 use App\Entity\Rbac\Role;
+use App\Entity\Sla\Sla;
 use App\Entity\User\User;
 
 final class AuditEntityCatalog
 {
-    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'MaintenanceWindow', 'Agent', 'AgentCredential', 'EnrollmentToken', 'Incident', 'IncidentActivity', 'NotificationChannel', 'NotificationRule'];
+    public const array NAMES = ['User', 'Role', 'Permission', 'Node', 'NodeGroup', 'MonitoringTemplate', 'ItemDefinition', 'MaintenanceWindow', 'Agent', 'AgentCredential', 'EnrollmentToken', 'Incident', 'IncidentActivity', 'NotificationChannel', 'NotificationRule', 'Sla', 'AlertRule'];
 
     /** @var array<string, class-string> */
     public const array ENTITIES = [
@@ -41,6 +43,8 @@ final class AuditEntityCatalog
         'IncidentActivity' => IncidentActivity::class,
         'NotificationChannel' => NotificationChannel::class,
         'NotificationRule' => NotificationRule::class,
+        'Sla' => Sla::class,
+        'AlertRule' => AlertRule::class,
     ];
 
     /**
@@ -65,6 +69,8 @@ final class AuditEntityCatalog
         'IncidentActivity' => 'audit_incident_activities',
         'NotificationChannel' => 'audit_notification_channels',
         'NotificationRule' => 'audit_notification_rules',
+        'Sla' => 'audit_slas',
+        'AlertRule' => 'audit_alert_rules',
     ];
 
     /** @return array<string, class-string> */

@@ -49,6 +49,14 @@ final class PermissionCode
     public const string NOTIFICATION_RULES_CREATE = 'notification_rules.create';
     public const string NOTIFICATION_RULES_UPDATE = 'notification_rules.update';
     public const string NOTIFICATION_RULES_DELETE = 'notification_rules.delete';
+    public const string SLAS_READ = 'slas.read';
+    public const string SLAS_CREATE = 'slas.create';
+    public const string SLAS_UPDATE = 'slas.update';
+    public const string SLAS_DELETE = 'slas.delete';
+    public const string ALERT_RULES_READ = 'alert_rules.read';
+    public const string ALERT_RULES_CREATE = 'alert_rules.create';
+    public const string ALERT_RULES_UPDATE = 'alert_rules.update';
+    public const string ALERT_RULES_DELETE = 'alert_rules.delete';
 
     /** @return array<string, array{name: string, description: string, category: string}> */
     public static function catalog(): array
@@ -97,6 +105,14 @@ final class PermissionCode
             self::NOTIFICATION_RULES_CREATE => self::entry('Create notification rules', 'Create incident notification routing rules.', 'Notifications'),
             self::NOTIFICATION_RULES_UPDATE => self::entry('Update notification rules', 'Update incident notification routing rules.', 'Notifications'),
             self::NOTIFICATION_RULES_DELETE => self::entry('Delete notification rules', 'Delete incident notification routing rules.', 'Notifications'),
+            self::SLAS_READ => self::entry('Read SLAs', 'View SLA configurations and calculated availability reports.', 'SLA'),
+            self::SLAS_CREATE => self::entry('Create SLAs', 'Create SLA objectives and scopes.', 'SLA'),
+            self::SLAS_UPDATE => self::entry('Update SLAs', 'Update SLA objectives and scopes.', 'SLA'),
+            self::SLAS_DELETE => self::entry('Delete SLAs', 'Delete SLA configurations.', 'SLA'),
+            self::ALERT_RULES_READ => self::entry('Read alert rules', 'View alert rules and their template, node group, and node assignments.', 'Monitoring'),
+            self::ALERT_RULES_CREATE => self::entry('Create alert rules', 'Create alert rules and assign them to templates, node groups, or nodes.', 'Monitoring'),
+            self::ALERT_RULES_UPDATE => self::entry('Update alert rules', 'Update alert rules and their assignments.', 'Monitoring'),
+            self::ALERT_RULES_DELETE => self::entry('Delete alert rules', 'Delete alert rules.', 'Monitoring'),
         ];
     }
 

@@ -33,6 +33,14 @@ Use this reference for entity, mapping, and persistence decisions.
 - Do not let factories persist, flush, authorize, or orchestrate use cases.
 - Direct `new Entity(...)` remains acceptable in narrow entity-focused unit tests when it keeps the test simpler.
 
+## Lazy ManyToOne and readonly identifiers
+
+- Every entity's `id` is `private readonly`. Loading a single item whose output touches a lazily-loaded `ManyToOne` association (a Doctrine proxy) can throw "Attempting to change readonly property" when the proxy initializes and re-hydrates its own identifier.
+- Accessing only the identifier of a lazy association (`$entity->relation()->id()`) is safe: Doctrine proxies short-circuit identifier reads without hydrating. The risk is any non-identifier access (e.g. `->key()`, `->name()`) on a lazily-loaded `ManyToOne`.
+- Fix by eager-loading the specific association in the repository (`addSelect` + `join` in a dedicated `findWith...()` method), not by dropping `readonly` or switching the mapping to `fetch: EAGER`. See `IncidentRepository::findWithRelations()` and `AlertRuleRepository::findWithItemDefinition()`.
+- `ManyToMany`/`OneToMany` collections hydrate differently (no pre-identified proxy placeholder) and are not subject to this specific failure mode.
+- Only entities with an actual `ManyToOne` are at risk; audit new single-item Providers whose output DTO reads a non-identifier property through one.
+
 ## Database work
 
 - PostgreSQL 16 is the target database.

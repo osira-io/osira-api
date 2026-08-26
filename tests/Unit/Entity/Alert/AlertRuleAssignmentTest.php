@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Entity\Alert;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
@@ -23,7 +24,7 @@ final class AlertRuleAssignmentTest extends TestCase
         $other = new ItemDefinition('custom.other', 'Other', null, null, ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
         $template = new MonitoringTemplate('Linux', 'linux', null, true, $now);
         $template->replaceItemDefinitions([$other], $now);
-        $rule = new AlertRule('CPU', 'CPU', 'CPU', $item, AlertOperator::GT, '90', null, 60, 1, AlertSeverity::WARNING, true, $now);
+        $rule = new AlertRule('CPU', 'CPU', $item, AlertOperator::GT, '90', null, 60, 1, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
 
         $this->expectException(\InvalidArgumentException::class);
         $rule->assignToTemplate($template);
@@ -39,7 +40,7 @@ final class AlertRuleAssignmentTest extends TestCase
         $group->replaceMonitoringTemplates([$template], $now);
         $node = new Node('linux-node', null, 'linux', 'x86_64', $now, $now);
         $node->replaceGroups([$group]);
-        $rule = new AlertRule('Windows', 'Windows', 'Windows', $item, AlertOperator::GT, '1', null, 60, 1, AlertSeverity::WARNING, true, $now);
+        $rule = new AlertRule('Windows', 'Windows', $item, AlertOperator::GT, '1', null, 60, 1, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
 
         $this->expectException(\InvalidArgumentException::class);
         $rule->assignToNode($node);

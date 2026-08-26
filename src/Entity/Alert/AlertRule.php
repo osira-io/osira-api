@@ -25,6 +25,48 @@ final class AlertRule
     #[ORM\Column(type: UlidType::NAME, unique: true)]
     private readonly Ulid $id;
 
+    #[ORM\Column(length: 128)]
+    private string $name;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $description;
+
+    #[ORM\Column(length: 255)]
+    private string $title;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private string $message;
+
+    #[ORM\Column(length: 255)]
+    private string $expectedValue;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $recoveryThreshold;
+
+    #[ORM\Column]
+    private int $evaluationWindowSeconds;
+
+    #[ORM\Column]
+    private int $requiredOccurrences;
+
+    #[ORM\Column(enumType: AlertOperator::class, length: 8)]
+    private AlertOperator $operator;
+
+    #[ORM\Column(enumType: AlertSeverity::class, length: 16)]
+    private AlertSeverity $severity;
+
+    #[ORM\Column(enumType: AlertRuleImpactType::class, length: 32)]
+    private AlertRuleImpactType $impactType;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $isEnabled;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private readonly \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $updatedAt;
+
     /** @var Collection<int, MonitoringTemplate> */
     #[ORM\ManyToMany(targetEntity: MonitoringTemplate::class, inversedBy: 'alertRules')]
     #[ORM\JoinTable(name: 'alert_rule_monitoring_templates')]
@@ -41,29 +83,58 @@ final class AlertRule
     private Collection $nodes;
 
     public function __construct(
-        #[ORM\Column(length: 128)] private string $name,
-        #[ORM\Column(length: 255)] private string $title,
-        #[ORM\Column(type: Types::TEXT)] private string $message,
+        string $name,
+        ?string $description,
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
         private readonly ItemDefinition $itemDefinition,
-        #[ORM\Column(enumType: AlertOperator::class, length: 8)] private AlertOperator $operator,
-        #[ORM\Column(length: 255)] private string $threshold,
-        #[ORM\Column(length: 255, nullable: true)] private ?string $recoveryThreshold,
-        #[ORM\Column] private int $evaluationWindowSeconds,
-        #[ORM\Column] private int $requiredOccurrences,
-        #[ORM\Column(enumType: AlertSeverity::class, length: 16)] private AlertSeverity $severity,
-        #[ORM\Column(options: ['default' => true])] private bool $isEnabled,
-        #[ORM\Column(type: Types::DATETIME_IMMUTABLE)] private readonly \DateTimeImmutable $createdAt,
+        AlertOperator $operator,
+        string $expectedValue,
+        ?string $recoveryThreshold,
+        int $evaluationWindowSeconds,
+        int $requiredOccurrences,
+        AlertSeverity $severity,
+        AlertRuleImpactType $impactType,
+        bool $isEnabled,
+        \DateTimeImmutable $now,
     ) {
-        if ($evaluationWindowSeconds < 1 || $requiredOccurrences < 1) {
-            throw new \InvalidArgumentException('Alert evaluation window and required occurrences must be positive.');
-        }
-
+        self::assertPositive($evaluationWindowSeconds, $requiredOccurrences);
         $this->id = new Ulid();
+        $this->name = $name;
+        $this->description = $description;
+        $this->title = $name;
+        $this->message = $description ?? $name;
+        $this->operator = $operator;
+        $this->expectedValue = $expectedValue;
+        $this->recoveryThreshold = $recoveryThreshold;
+        $this->evaluationWindowSeconds = $evaluationWindowSeconds;
+        $this->requiredOccurrences = $requiredOccurrences;
+        $this->severity = $severity;
+        $this->impactType = $impactType;
+        $this->isEnabled = $isEnabled;
+        $this->createdAt = $now;
+        $this->updatedAt = $now;
         $this->assignedTemplates = new ArrayCollection();
         $this->nodeGroups = new ArrayCollection();
         $this->nodes = new ArrayCollection();
+    }
+
+    public function update(string $name, ?string $description, AlertOperator $operator, string $expectedValue, ?string $recoveryThreshold, int $evaluationWindowSeconds, int $requiredOccurrences, AlertSeverity $severity, AlertRuleImpactType $impactType, bool $isEnabled, \DateTimeImmutable $now): void
+    {
+        self::assertPositive($evaluationWindowSeconds, $requiredOccurrences);
+        $this->name = $name;
+        $this->description = $description;
+        $this->title = $name;
+        $this->message = $description ?? $name;
+        $this->operator = $operator;
+        $this->expectedValue = $expectedValue;
+        $this->recoveryThreshold = $recoveryThreshold;
+        $this->evaluationWindowSeconds = $evaluationWindowSeconds;
+        $this->requiredOccurrences = $requiredOccurrences;
+        $this->severity = $severity;
+        $this->impactType = $impactType;
+        $this->isEnabled = $isEnabled;
+        $this->updatedAt = $now;
     }
 
     public function id(): Ulid
@@ -74,6 +145,11 @@ final class AlertRule
     public function name(): string
     {
         return $this->name;
+    }
+
+    public function description(): ?string
+    {
+        return $this->description;
     }
 
     public function title(): string
@@ -96,9 +172,9 @@ final class AlertRule
         return $this->operator;
     }
 
-    public function threshold(): string
+    public function expectedValue(): string
     {
-        return $this->threshold;
+        return $this->expectedValue;
     }
 
     public function recoveryThreshold(): ?string
@@ -121,6 +197,11 @@ final class AlertRule
         return $this->severity;
     }
 
+    public function impactType(): AlertRuleImpactType
+    {
+        return $this->impactType;
+    }
+
     public function isEnabled(): bool
     {
         return $this->isEnabled;
@@ -129,6 +210,11 @@ final class AlertRule
     public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function updatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 
     /** @return Collection<int, MonitoringTemplate> */
@@ -173,6 +259,58 @@ final class AlertRule
         if (!$this->nodes->contains($node)) {
             $this->nodes->add($node);
             $node->addAlertRule($this);
+        }
+    }
+
+    /** @param list<MonitoringTemplate> $templates */
+    public function replaceTemplates(array $templates, \DateTimeImmutable $now): void
+    {
+        foreach ($this->assignedTemplates->toArray() as $existing) {
+            if (!\in_array($existing, $templates, true)) {
+                $this->assignedTemplates->removeElement($existing);
+                $existing->removeAlertRule($this);
+            }
+        }
+        foreach ($templates as $template) {
+            $this->assignToTemplate($template);
+        }
+        $this->updatedAt = $now;
+    }
+
+    /** @param list<NodeGroup> $groups */
+    public function replaceNodeGroups(array $groups, \DateTimeImmutable $now): void
+    {
+        foreach ($this->nodeGroups->toArray() as $existing) {
+            if (!\in_array($existing, $groups, true)) {
+                $this->nodeGroups->removeElement($existing);
+                $existing->removeAlertRule($this);
+            }
+        }
+        foreach ($groups as $group) {
+            $this->assignToNodeGroup($group);
+        }
+        $this->updatedAt = $now;
+    }
+
+    /** @param list<Node> $nodes */
+    public function replaceNodes(array $nodes, \DateTimeImmutable $now): void
+    {
+        foreach ($this->nodes->toArray() as $existing) {
+            if (!\in_array($existing, $nodes, true)) {
+                $this->nodes->removeElement($existing);
+                $existing->removeAlertRule($this);
+            }
+        }
+        foreach ($nodes as $node) {
+            $this->assignToNode($node);
+        }
+        $this->updatedAt = $now;
+    }
+
+    private static function assertPositive(int $evaluationWindowSeconds, int $requiredOccurrences): void
+    {
+        if ($evaluationWindowSeconds < 1 || $requiredOccurrences < 1) {
+            throw new \InvalidArgumentException('Alert evaluation window and required occurrences must be positive.');
         }
     }
 }

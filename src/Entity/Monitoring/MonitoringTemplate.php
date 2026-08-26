@@ -157,6 +157,11 @@ final class MonitoringTemplate
         }
     }
 
+    public function removeAlertRule(AlertRule $alertRule): void
+    {
+        $this->alertRules->removeElement($alertRule);
+    }
+
     public function addNodeGroup(NodeGroup $nodeGroup): void
     {
         if (!$this->nodeGroups->contains($nodeGroup)) {
