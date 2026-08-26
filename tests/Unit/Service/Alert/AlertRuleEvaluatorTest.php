@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service\Alert;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Monitoring\ItemDefinition;
 use App\Entity\Monitoring\ItemValueType;
@@ -94,7 +95,7 @@ final class AlertRuleEvaluatorTest extends TestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $item = new ItemDefinition('custom.test.metric', 'Metric', null, null, $type, 60, 5, 'printf 1', null, true, $now);
 
-        return new AlertRule('Rule', 'Alert title', 'Alert message', $item, $operator, $threshold, $recovery, $window, $occurrences, AlertSeverity::WARNING, true, $now);
+        return new AlertRule('Rule', 'Alert message', $item, $operator, $threshold, $recovery, $window, $occurrences, AlertSeverity::WARNING, AlertRuleImpactType::AVAILABILITY, true, $now);
     }
 
     /** @param array<string, string> $labels

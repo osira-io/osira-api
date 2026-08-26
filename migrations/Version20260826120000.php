@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+final class Version20260826120000 extends AbstractMigration
+{
+    /** @var array<string, string> */
+    private const array PERMISSIONS = [
+        '00000000-0000-0000-0000-000000000044' => 'slas.read|Read SLAs|View SLA configurations and calculated availability reports.',
+        '00000000-0000-0000-0000-000000000045' => 'slas.create|Create SLAs|Create SLA objectives and scopes.',
+        '00000000-0000-0000-0000-000000000046' => 'slas.update|Update SLAs|Update SLA objectives and scopes.',
+        '00000000-0000-0000-0000-000000000047' => 'slas.delete|Delete SLAs|Delete SLA configurations.',
+    ];
+
+    public function getDescription(): string
+    {
+        return 'Add SLA objectives, Node and NodeGroup scopes, audit, and RBAC.';
+    }
+
+    public function up(Schema $schema): void
+    {
+        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof PostgreSQLPlatform, 'This migration requires PostgreSQL.');
+        $this->addSql('CREATE TABLE slas (id UUID NOT NULL, name VARCHAR(128) NOT NULL, description TEXT DEFAULT NULL, target_percentage NUMERIC(6, 3) NOT NULL, period_type VARCHAR(32) NOT NULL, exclude_maintenance BOOLEAN DEFAULT true NOT NULL, is_enabled BOOLEAN DEFAULT true NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY (id))');
+        $this->addSql('ALTER TABLE slas ADD CONSTRAINT uniq_slas_name UNIQUE (name)');
+        $this->addSql('CREATE TABLE sla_nodes (sla_id UUID NOT NULL, node_id UUID NOT NULL, PRIMARY KEY (sla_id, node_id))');
+        $this->addSql('CREATE INDEX IDX_A36551D87A2CC8C4 ON sla_nodes (sla_id)');
+        $this->addSql('CREATE INDEX IDX_A36551D8460D9FD7 ON sla_nodes (node_id)');
+        $this->addSql('ALTER TABLE sla_nodes ADD CONSTRAINT FK_SLA_NODES_SLA FOREIGN KEY (sla_id) REFERENCES slas (id) ON DELETE CASCADE NOT DEFERRABLE');
+        $this->addSql('ALTER TABLE sla_nodes ADD CONSTRAINT FK_SLA_NODES_NODE FOREIGN KEY (node_id) REFERENCES nodes (id) ON DELETE CASCADE NOT DEFERRABLE');
+        $this->addSql('CREATE TABLE sla_node_groups (sla_id UUID NOT NULL, node_group_id UUID NOT NULL, PRIMARY KEY (sla_id, node_group_id))');
+        $this->addSql('CREATE INDEX IDX_D4A8F6A97A2CC8C4 ON sla_node_groups (sla_id)');
+        $this->addSql('CREATE INDEX IDX_D4A8F6A940F9C112 ON sla_node_groups (node_group_id)');
+        $this->addSql('ALTER TABLE sla_node_groups ADD CONSTRAINT FK_SLA_GROUPS_SLA FOREIGN KEY (sla_id) REFERENCES slas (id) ON DELETE CASCADE NOT DEFERRABLE');
+        $this->addSql('ALTER TABLE sla_node_groups ADD CONSTRAINT FK_SLA_GROUPS_GROUP FOREIGN KEY (node_group_id) REFERENCES node_groups (id) ON DELETE CASCADE NOT DEFERRABLE');
+        $this->createAuditTable('audit_slas');
+        foreach (self::PERMISSIONS as $id => $definition) {
+            [$code, $name, $description] = explode('|', $definition, 3);
+            $this->addSql(\sprintf("INSERT INTO permissions (id, code, name, description, category, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', 'SLA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)", $id, $code, $name, $description));
+            foreach (['00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000102'] as $roleId) {
+                $this->addSql(\sprintf("INSERT INTO role_permissions (role_id, permission_id) VALUES ('%s', '%s')", $roleId, $id));
+            }
+        }
+        foreach (['00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000104'] as $roleId) {
+            $this->addSql(\sprintf("INSERT INTO role_permissions (role_id, permission_id) VALUES ('%s', '00000000-0000-0000-0000-000000000044')", $roleId));
+        }
+        foreach (['00000000-0000-0000-0000-000000000045', '00000000-0000-0000-0000-000000000046'] as $permissionId) {
+            $this->addSql(\sprintf("INSERT INTO role_permissions (role_id, permission_id) VALUES ('00000000-0000-0000-0000-000000000103', '%s')", $permissionId));
+        }
+    }
+
+    public function down(Schema $schema): void
+    {
+        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof PostgreSQLPlatform, 'This migration requires PostgreSQL.');
+        foreach (array_keys(self::PERMISSIONS) as $id) {
+            $this->addSql("DELETE FROM role_permissions WHERE permission_id = '".$id."'");
+            $this->addSql("DELETE FROM permissions WHERE id = '".$id."'");
+        }
+        $this->addSql('DROP TABLE audit_slas');
+        $this->addSql('DROP TABLE sla_node_groups');
+        $this->addSql('DROP TABLE sla_nodes');
+        $this->addSql('DROP TABLE slas');
+    }
+
+    private function createAuditTable(string $table): void
+    {
+        $this->addSql(\sprintf('CREATE TABLE %s (id INT GENERATED BY DEFAULT AS IDENTITY NOT NULL, type VARCHAR(10) NOT NULL, object_id VARCHAR(255) NOT NULL, discriminator VARCHAR(255) DEFAULT NULL, transaction_hash VARCHAR(40) DEFAULT NULL, diffs JSONB DEFAULT NULL, extra_data JSONB DEFAULT NULL, blame_id VARCHAR(255) DEFAULT NULL, blame_user VARCHAR(255) DEFAULT NULL, blame_user_fqdn VARCHAR(255) DEFAULT NULL, blame_user_firewall VARCHAR(100) DEFAULT NULL, ip VARCHAR(45) DEFAULT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY (id))', $table));
+        $hash = md5($table);
+        foreach (['type', 'object_id', 'discriminator', 'transaction_hash', 'blame_id', 'created_at'] as $column) {
+            $this->addSql(\sprintf('CREATE INDEX %s_%s_idx ON %s (%s)', $column, $hash, $table, $column));
+        }
+    }
+}

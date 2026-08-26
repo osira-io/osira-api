@@ -63,4 +63,32 @@ final class MaintenanceWindowRepository extends ServiceEntityRepository
 
         return $windows;
     }
+
+    /** @return list<MaintenanceWindow> */
+    public function findIntersectingForNode(Node $node, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $targetExpressions = ['targetNode.id = :nodeId'];
+        foreach ($node->groups()->toArray() as $index => $group) {
+            $targetExpressions[] = 'targetGroup.id = :groupId'.$index;
+        }
+        $qb = $this->createQueryBuilder('maintenanceWindow')->distinct()
+            ->leftJoin('maintenanceWindow.nodes', 'targetNode')->leftJoin('maintenanceWindow.nodeGroups', 'targetGroup')
+            ->andWhere('maintenanceWindow.isEnabled = true')->andWhere('maintenanceWindow.startsAt < :to')->andWhere('maintenanceWindow.endsAt > :from')
+            ->andWhere(implode(' OR ', $targetExpressions))
+            ->setParameter('nodeId', $node->id(), UlidType::NAME)->setParameter('from', $from, Types::DATETIME_IMMUTABLE)->setParameter('to', $to, Types::DATETIME_IMMUTABLE)
+            ->orderBy('maintenanceWindow.startsAt', 'ASC');
+        foreach ($node->groups()->toArray() as $index => $group) {
+            $qb->setParameter('groupId'.$index, $group->id(), UlidType::NAME);
+        }
+        $results = $qb->getQuery()->getResult();
+
+        $windows = [];
+        foreach (\is_array($results) ? $results : [] as $result) {
+            if ($result instanceof MaintenanceWindow) {
+                $windows[] = $result;
+            }
+        }
+
+        return $windows;
+    }
 }

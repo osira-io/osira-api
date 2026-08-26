@@ -46,12 +46,18 @@ final class SystemRole
                     PermissionCode::MAINTENANCE_WINDOWS_UPDATE,
                     PermissionCode::NOTIFICATION_CHANNELS_READ,
                     PermissionCode::NOTIFICATION_RULES_READ,
+                    PermissionCode::SLAS_READ,
+                    PermissionCode::SLAS_CREATE,
+                    PermissionCode::SLAS_UPDATE,
+                    PermissionCode::ALERT_RULES_READ,
+                    PermissionCode::ALERT_RULES_CREATE,
+                    PermissionCode::ALERT_RULES_UPDATE,
                 ],
             ],
             self::VIEWER => [
                 'name' => 'Viewer',
                 'description' => 'Reads nodes and node groups without modifying them.',
-                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ, PermissionCode::INCIDENTS_READ, PermissionCode::MAINTENANCE_WINDOWS_READ, PermissionCode::NOTIFICATION_CHANNELS_READ, PermissionCode::NOTIFICATION_RULES_READ],
+                'permissions' => [PermissionCode::NODES_READ, PermissionCode::NODE_GROUPS_READ, PermissionCode::METRICS_READ, PermissionCode::INCIDENTS_READ, PermissionCode::MAINTENANCE_WINDOWS_READ, PermissionCode::NOTIFICATION_CHANNELS_READ, PermissionCode::NOTIFICATION_RULES_READ, PermissionCode::SLAS_READ, PermissionCode::ALERT_RULES_READ],
             ],
         ];
     }

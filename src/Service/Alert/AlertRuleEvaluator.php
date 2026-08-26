@@ -27,7 +27,7 @@ final class AlertRuleEvaluator
         self::validateOperator($type, $rule->operator());
         $matching = 0;
         foreach ($points as $point) {
-            if ($this->compare($point->value, $rule->threshold(), $type, $rule->operator())) {
+            if ($this->compare($point->value, $rule->expectedValue(), $type, $rule->operator())) {
                 ++$matching;
             }
         }
@@ -38,7 +38,7 @@ final class AlertRuleEvaluator
         }
 
         if ($incidentIsFiring) {
-            $recoveryThreshold = $rule->recoveryThreshold() ?? $rule->threshold();
+            $recoveryThreshold = $rule->recoveryThreshold() ?? $rule->expectedValue();
             $recoveryOperator = null === $rule->recoveryThreshold()
                 ? $rule->operator()->inverse()
                 : match ($rule->operator()) {
@@ -86,10 +86,30 @@ final class AlertRuleEvaluator
         };
     }
 
-    private static function validateOperator(ItemValueType $type, AlertOperator $operator): void
+    /** The single source of truth for which AlertOperator values are valid for a given ItemValueType, reused by AlertRuleManager to validate a rule's operator at create/update time. */
+    public static function validateOperator(ItemValueType $type, AlertOperator $operator): void
     {
         if (\in_array($type, [ItemValueType::STRING, ItemValueType::BOOLEAN], true) && !\in_array($operator, [AlertOperator::EQ, AlertOperator::NEQ], true)) {
             throw new InvalidAlertComparison(\sprintf('Operator "%s" is invalid for %s items.', $operator->value, $type->value));
+        }
+    }
+
+    /** Validates that a raw string value is well-formed for the given ItemValueType, without comparing it to anything. Reused by AlertRuleManager to reject malformed expectedValue/recoveryThreshold at create/update time using the exact same rules `compare()` enforces at evaluation time. */
+    public static function assertValidValueFormat(ItemValueType $type, string $value): void
+    {
+        if (\in_array($type, [ItemValueType::STRING, ItemValueType::BOOLEAN], true)) {
+            if (ItemValueType::BOOLEAN === $type) {
+                self::booleanValue($value);
+            }
+
+            return;
+        }
+
+        if (!is_numeric($value)) {
+            throw new InvalidAlertComparison(\sprintf('Value "%s" is not a valid %s value.', $value, $type->value));
+        }
+        if (ItemValueType::INTEGER === $type && 1 !== preg_match('/^-?\d+$/D', $value)) {
+            throw new InvalidAlertComparison('Integer alert comparisons require integer values.');
         }
     }
 

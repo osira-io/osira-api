@@ -150,6 +150,11 @@ final class Node
         }
     }
 
+    public function removeAlertRule(AlertRule $alertRule): void
+    {
+        $this->alertRules->removeElement($alertRule);
+    }
+
     /** @param list<string> $tags */
     public function updateBusinessProperties(?string $displayName, ?string $environment, array $tags): void
     {

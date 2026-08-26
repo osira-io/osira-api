@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Service\Notification;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Incident\Incident;
 use App\Entity\Monitoring\ItemDefinition;
@@ -47,7 +48,7 @@ final class IncidentNotificationHandlerTest extends KernelTestCase
         $node = new Node('notify-node', null, 'linux', 'amd64', $now, $now);
         $node->replaceGroups([$group]);
         $item = new ItemDefinition('custom.cpu', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 95', null, true, $now);
-        $alertRule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $alertRule = new AlertRule('CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $incident = new Incident($node, $alertRule, AlertSeverity::CRITICAL, 'CPU high', 'CPU usage is high', [], 'identity', '95', $now, $now, $now);
 
         $groupChannel = $this->emailChannel('Group channel', true, $now);
@@ -99,7 +100,7 @@ final class IncidentNotificationHandlerTest extends KernelTestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('retry-node', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.retry', 'Retry', null, null, ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
-        $alertRule = new AlertRule('Retry alert', 'Retry alert', 'Retry alert', $item, AlertOperator::GT, '0', null, 60, 1, AlertSeverity::CRITICAL, true, $now);
+        $alertRule = new AlertRule('Retry alert', 'Retry alert', $item, AlertOperator::GT, '0', null, 60, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
         $incident = new Incident($node, $alertRule, AlertSeverity::CRITICAL, 'Retry alert', 'Retry alert', [], 'retry-identity', '1', $now, $now, $now);
         $channel = new NotificationChannel('Retry webhook', NotificationChannelType::WEBHOOK, true, [], 'https://hooks.example.test/retry', null, $now);
         $rule = new NotificationRule('Retry routing', true, [AlertSeverity::CRITICAL], $now);

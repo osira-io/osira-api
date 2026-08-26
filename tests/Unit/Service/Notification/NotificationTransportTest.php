@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service\Notification;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Incident\Incident;
 use App\Entity\Monitoring\ItemDefinition;
@@ -126,7 +127,7 @@ final class NotificationTransportTest extends TestCase
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
         $node = new Node('notify-node', 'Production API', 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.cpu', 'CPU', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 95', null, true, $now);
-        $rule = new AlertRule('CPU high', 'CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('CPU high', 'CPU usage is high', $item, AlertOperator::GT, '90', '80', 300, 1, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
 
         return new Incident($node, $rule, AlertSeverity::CRITICAL, 'CPU high', 'CPU usage is high', [], 'identity', '95', $now, $now, $now);
     }

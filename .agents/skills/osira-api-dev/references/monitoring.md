@@ -16,6 +16,8 @@ Use this reference for monitoring catalog and metrics read-path work.
 - Effective items follow only `ItemDefinition -> MonitoringTemplate -> NodeGroup -> Node`; there are no direct Item -> Group/Node or Template -> Node assignments.
 - Filter disabled templates/items, unsupported string metrics, and OS-incompatible commands fail-safe. Unknown operating systems receive no items.
 - Command creation/change requires `item_definitions.manage_commands` and is audited. Collection commands are not remote actions.
+- `AlertRule` has a full CRUD API (`/api/alert-rules`). Its ItemDefinition target is immutable after creation. Assignment to a MonitoringTemplate, NodeGroup, or Node reuses `AlertRuleAssignmentValidator` and must never allow a rule that is structurally impossible to evaluate (item not served by the template/group/node's effective chain, OS-incompatible command, or a `string`-valued item).
+- `AlertRule.impactType` (`availability`/`performance`/`informational`) is mandatory on create, explicitly chosen by the caller, never inferred. Only `availability` Incidents contribute to SLA downtime; see `sla.md`.
 
 ## VictoriaMetrics read path
 

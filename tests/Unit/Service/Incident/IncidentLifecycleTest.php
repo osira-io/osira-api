@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service\Incident;
 
 use App\Entity\Alert\AlertOperator;
 use App\Entity\Alert\AlertRule;
+use App\Entity\Alert\AlertRuleImpactType;
 use App\Entity\Alert\AlertSeverity;
 use App\Entity\Incident\IncidentStatus;
 use App\Entity\Monitoring\ItemDefinition;
@@ -79,7 +80,7 @@ final class IncidentLifecycleTest extends TestCase
     {
         $node = new Node('node-1', null, 'linux', 'amd64', $now, $now);
         $item = new ItemDefinition('custom.disk.usage', 'Disk', null, '%', ItemValueType::FLOAT, 60, 5, 'printf 1', null, true, $now);
-        $rule = new AlertRule('Disk full', 'Disk full', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, true, $now);
+        $rule = new AlertRule('Disk full', 'Disk usage is high', $item, AlertOperator::GT, '90', '80', 300, 3, AlertSeverity::CRITICAL, AlertRuleImpactType::AVAILABILITY, true, $now);
 
         return [$node, $rule];
     }

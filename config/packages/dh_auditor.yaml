@@ -27,6 +27,11 @@ dh_auditor:
                     ignored_columns:
                         - webhookSecretCiphertext
                 App\Entity\Notification\NotificationRule: ~
+                App\Entity\Sla\Sla: ~
+                App\Entity\Alert\AlertRule:
+                    ignored_columns:
+                        - title
+                        - message
                 App\Entity\Agent\Agent: ~
                 App\Entity\Agent\AgentCredential:
                     ignored_columns:

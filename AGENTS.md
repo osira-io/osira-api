@@ -136,6 +136,8 @@ Examples:
 - `/api/agent/config` exposes only the command compatible with the Node OS. Unknown OS values and incompatible or string-valued items fail safe and are not collected.
 - VictoriaMetrics uses the generic `osira_item_value` series scoped by controlled `node_id` and `item_key` labels; no item-key mapping or user MetricsQL is allowed.
 - Creating or changing Bash/PowerShell requires `item_definitions.manage_commands`, and command changes remain on the audited `ItemDefinition` surface.
+- `AlertRule` is fully configurable through `/api/alert-rules` (CRUD). A rule targets exactly one `ItemDefinition` (immutable after creation) and may additionally be assigned to any mix of MonitoringTemplate, NodeGroup, and Node — assignment is deliberately more flexible than the Item inheritance chain and reuses `AlertRuleAssignmentValidator` for every scope (a Template-scoped rule's item must belong to that Template; a NodeGroup-scoped rule's item must be served by one of the group's enabled Templates; a Node-scoped rule's item must be effective for that Node — enabled, OS-compatible command, metric-compatible value type). A rule can never target a `string`-valued `ItemDefinition`: string items are not collected as metrics in V1.
+- `AlertRule.impactType` (`availability`, `performance`, `informational`) is mandatory on create and explicitly chosen by the caller — never inferred from the ItemDefinition key, operator, or severity. Only `availability` Incidents contribute to SLA downtime.
 
 ## Incident notifications
 
@@ -147,6 +149,16 @@ Examples:
 - Webhook delivery is at-least-once. Expose the stable delivery identity as `deliveryId` in the signed payload, `Osira-Delivery-Id`, and `Idempotency-Key`; receivers can deduplicate on it for effectively-once effects.
 - Webhook secrets are write-only, encrypted at rest, excluded from audit, logs, exceptions, outputs, and OpenAPI examples, and may only be used to sign the exact request payload.
 - Maintenance suppression remains exclusively in incident creation. Notification code must not implement a second maintenance decision.
+
+## SLA reports
+
+- SLA availability is calculated exclusively from PostgreSQL Incident lifecycle intervals and MaintenanceWindows, never from VictoriaMetrics samples.
+- Merge overlapping incident and maintenance intervals per Node before counting seconds. A FIRING Incident extends to the report end.
+- Multi-node SLA availability is weighted by eligible node-seconds (`sum(uptime) / sum(eligible)`), never averaged from node percentages. Direct and NodeGroup scopes are deduplicated.
+- Ad hoc `from`/`to` report bounds never modify the persisted SLA configuration.
+- Only Incidents whose AlertRule has `impactType = availability` contribute to SLA downtime. Performance and informational Incidents never affect availability. The classification is an explicit, user-set field on AlertRule — never inferred from the ItemDefinition key.
+- Zero eligible seconds (an SLA scope resolved to no Node, or a period fully excluded by MaintenanceWindows) is never reported as 100% available. It is `no_data`: `availabilityPercentage` and `compliant` are `null`. A `no_data` report is neither compliant nor non-compliant.
+- In multi-node aggregation, Nodes with zero eligible seconds are excluded from the weighted average (they never count as 100%) but are still listed in `nodes[]` with `status = no_data`. If every Node in scope is `no_data`, the whole report is `no_data`.
 
 ## Migrations and fixtures
 

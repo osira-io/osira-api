@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Repository\Incident;
 
 use App\Entity\Incident\Incident;
+use App\Entity\Node\Node;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\LockMode;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Types\UlidType;
@@ -107,5 +109,31 @@ final class IncidentRepository extends ServiceEntityRepository
         }
 
         return $this->findWithRelations($id);
+    }
+
+    /** Eagerly loads the AlertRule so callers can inspect its impact classification without triggering N+1 queries.
+     * @return list<Incident>
+     */
+    public function findIntersectingForNode(Node $node, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $results = $this->createQueryBuilder('incident')
+            ->addSelect('alertRule')
+            ->join('incident.alertRule', 'alertRule')
+            ->andWhere('IDENTITY(incident.node) = :nodeId')
+            ->andWhere('incident.firstTriggeredAt < :to')
+            ->andWhere('incident.resolvedAt IS NULL OR incident.resolvedAt > :from')
+            ->setParameter('nodeId', $node->id(), UlidType::NAME)
+            ->setParameter('from', $from, Types::DATETIME_IMMUTABLE)
+            ->setParameter('to', $to, Types::DATETIME_IMMUTABLE)
+            ->orderBy('incident.firstTriggeredAt', 'ASC')->getQuery()->getResult();
+
+        $incidents = [];
+        foreach (\is_array($results) ? $results : [] as $result) {
+            if ($result instanceof Incident) {
+                $incidents[] = $result;
+            }
+        }
+
+        return $incidents;
     }
 }
