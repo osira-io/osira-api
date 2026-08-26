@@ -15,7 +15,7 @@ final readonly class WebhookSecretCipher
 
     public function encrypt(string $secret): string
     {
-        $nonce = random_bytes(\SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $nonce = (new \Random\Randomizer())->getBytes(\SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
 
         return sodium_bin2base64($nonce.sodium_crypto_secretbox($secret, $nonce, $this->key), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
     }
