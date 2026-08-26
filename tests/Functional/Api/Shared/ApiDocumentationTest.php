@@ -137,6 +137,7 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertStringNotContainsString('architecture', $encoded);
         self::assertStringNotContainsString('secretHash', json_encode($document, \JSON_THROW_ON_ERROR));
         self::assertStringNotContainsString('tokenHash', json_encode($document, \JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('webhookSecretCiphertext', json_encode($document, \JSON_THROW_ON_ERROR));
     }
 
     public function testTagsAreInDeterministicOrder(): void
@@ -168,6 +169,8 @@ final class ApiDocumentationTest extends ApiTestCase
             'ItemDefinition',
             'Metric',
             'Incident',
+            'NotificationChannel',
+            'NotificationRule',
             'MaintenanceWindow',
             'EnrollmentToken',
             'AgentEnrollment',

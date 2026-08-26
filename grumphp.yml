@@ -1,5 +1,5 @@
 grumphp:
-    process_timeout: 180
+    process_timeout: 300
     stop_on_failure: false
     parallel:
         enabled: true

@@ -76,6 +76,8 @@ final class CurrentUserContextTest extends ApiTestCase
             PermissionCode::NODE_GROUPS_CREATE,
             PermissionCode::NODE_GROUPS_UPDATE,
             PermissionCode::NODE_GROUPS_DELETE,
+            PermissionCode::NOTIFICATION_CHANNELS_READ,
+            PermissionCode::NOTIFICATION_RULES_READ,
         ];
         sort($expected, \SORT_STRING);
         self::assertSame($expected, $permissions);

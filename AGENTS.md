@@ -137,6 +137,17 @@ Examples:
 - VictoriaMetrics uses the generic `osira_item_value` series scoped by controlled `node_id` and `item_key` labels; no item-key mapping or user MetricsQL is allowed.
 - Creating or changing Bash/PowerShell requires `item_definitions.manage_commands`, and command changes remain on the audited `ItemDefinition` surface.
 
+## Incident notifications
+
+- Incident notifications are asynchronous and originate only from business lifecycle transitions: `incident.firing` when an Incident is opened and `incident.resolved` when it resolves.
+- Never dispatch notifications for recurring FIRING evaluations or `lastValue` updates. Incident acknowledgement exists, but the `incident.acknowledged` notification event is outside V1.
+- Keep channels separate from routing rules. Routing may filter by severity, NodeGroup, and Node.
+- Use Symfony Messenger for delivery orchestration, Symfony Mailer for email, and Symfony HttpClient for webhooks; alert evaluation must never wait for transport I/O.
+- Persist a stable delivery identity for each Incident, event, and channel so Messenger retries are reasonably idempotent.
+- Webhook delivery is at-least-once. Expose the stable delivery identity as `deliveryId` in the signed payload, `Osira-Delivery-Id`, and `Idempotency-Key`; receivers can deduplicate on it for effectively-once effects.
+- Webhook secrets are write-only, encrypted at rest, excluded from audit, logs, exceptions, outputs, and OpenAPI examples, and may only be used to sign the exact request payload.
+- Maintenance suppression remains exclusively in incident creation. Notification code must not implement a second maintenance decision.
+
 ## Migrations and fixtures
 
 - Never rewrite an old migration that may already have been applied.

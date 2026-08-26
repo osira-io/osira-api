@@ -35,3 +35,30 @@ require dirname(__DIR__).'/vendor/autoload.php';
 })();
 
 (new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
+
+(static function (): void {
+    $projectDirectory = dirname(__DIR__);
+    $databaseTestUrl = $_ENV['DATABASE_TEST_URL'] ?? null;
+    $sharedSqliteUrls = [
+        'sqlite:///%kernel.project_dir%/var/test.db',
+        'sqlite:///'.$projectDirectory.'/var/test.db',
+    ];
+
+    if (!is_string($databaseTestUrl) || !in_array($databaseTestUrl, $sharedSqliteUrls, true)) {
+        return;
+    }
+
+    $databasePath = sprintf('%s/var/test-%d.db', $projectDirectory, getmypid());
+    $databaseUrl = 'sqlite:///'.$databasePath;
+    $_ENV['DATABASE_TEST_URL'] = $databaseUrl;
+    $_SERVER['DATABASE_TEST_URL'] = $databaseUrl;
+    putenv('DATABASE_TEST_URL='.$databaseUrl);
+
+    register_shutdown_function(static function () use ($databasePath): void {
+        foreach ([$databasePath, $databasePath.'-journal', $databasePath.'-shm', $databasePath.'-wal'] as $path) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    });
+})();

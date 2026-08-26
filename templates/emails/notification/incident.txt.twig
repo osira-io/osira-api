@@ -1,0 +1,11 @@
+{{ incident.title }}
+
+Status: {{ event == 'incident.firing' ? 'FIRING' : 'RESOLVED' }}
+Severity: {{ incident.severity.value|upper }}
+Node: {{ node.displayName ?? node.hostname }} ({{ node.hostname }})
+Alert rule: {{ alertRule.name }}
+Observed value: {{ observedValue }}
+First triggered: {{ incident.firstTriggeredAt|date('Y-m-d H:i:s T') }}
+{% if frontendUrl %}
+View incident: {{ frontendUrl }}
+{% endif %}

@@ -8,12 +8,14 @@ use App\Entity\Alert\AlertRule;
 use App\Entity\Incident\Incident;
 use App\Entity\Node\Node;
 use App\Factory\Incident\IncidentFactory;
+use App\Message\Notification\IncidentTransitionNotification;
 use App\Repository\Incident\IncidentRepository;
 use App\Service\Alert\AlertEvaluationResult;
 use App\Service\Alert\AlertEvaluationStatus;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final readonly class IncidentManager
 {
@@ -22,6 +24,7 @@ final readonly class IncidentManager
         private IncidentFactory $factory,
         private EntityManagerInterface $entityManager,
         private Connection $connection,
+        private MessageBusInterface $messageBus,
     ) {
     }
 
@@ -44,6 +47,13 @@ final readonly class IncidentManager
                 } else {
                     $incident = $this->factory->create($node, $rule, $result->labels, $value, $result->evaluatedAt);
                     $this->entityManager->persist($incident);
+                    $this->entityManager->flush();
+                    $this->messageBus->dispatch(new IncidentTransitionNotification(
+                        (string) $incident->id(),
+                        'incident.firing',
+                        $value,
+                        $result->evaluatedAt->format(\DATE_ATOM),
+                    ));
                 }
                 $this->entityManager->flush();
 
@@ -53,6 +63,12 @@ final readonly class IncidentManager
             if ($incident instanceof Incident) {
                 $incident->resolve($result->observedValue ?? $incident->lastValue(), $result->evaluatedAt);
                 $this->entityManager->flush();
+                $this->messageBus->dispatch(new IncidentTransitionNotification(
+                    (string) $incident->id(),
+                    'incident.resolved',
+                    $result->observedValue ?? $incident->lastValue(),
+                    $result->evaluatedAt->format(\DATE_ATOM),
+                ));
             }
 
             return $incident;
