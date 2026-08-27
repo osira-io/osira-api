@@ -18,6 +18,11 @@ final class AlertRuleEvaluator
             static fn ($point): bool => $point->timestamp >= $evaluatedAt->modify(\sprintf('-%d seconds', $rule->evaluationWindowSeconds())) && $point->timestamp <= $evaluatedAt,
         ));
         usort($points, static fn ($left, $right): int => $left->timestamp <=> $right->timestamp);
+        // VictoriaMetrics can return more than one raw point for the same instant (agent
+        // retries, batch retransmission, or no dedup interval configured). requiredOccurrences
+        // counts distinct collection instants, so collapse same-timestamp points, keeping the
+        // last value observed for that instant.
+        $points = self::deduplicateByTimestamp($points);
         $labels = self::publicLabels($series->labels);
         if ([] === $points) {
             return new AlertEvaluationResult(AlertEvaluationStatus::NO_DATA, null, $labels, $evaluatedAt);
@@ -54,6 +59,19 @@ final class AlertRuleEvaluator
         }
 
         return new AlertEvaluationResult(AlertEvaluationStatus::OK, $last, $labels, $evaluatedAt, $matching);
+    }
+
+    /** @param list<\App\Service\Metrics\VictoriaMetricsRangeSeriesPoint> $points
+     * @return list<\App\Service\Metrics\VictoriaMetricsRangeSeriesPoint>
+     */
+    private static function deduplicateByTimestamp(array $points): array
+    {
+        $byTimestamp = [];
+        foreach ($points as $point) {
+            $byTimestamp[$point->timestamp->format('Y-m-d\TH:i:s.u')] = $point;
+        }
+
+        return array_values($byTimestamp);
     }
 
     private function compare(string $observed, string $threshold, ItemValueType $type, AlertOperator $operator): bool

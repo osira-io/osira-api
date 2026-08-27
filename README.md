@@ -354,7 +354,7 @@ VictoriaMetrics errors into recovery, and does not delete incident history.
 When maintenance ends, normal evaluation resumes; if the condition is still
 firing and no active incident exists, Osira opens a new incident.
 
-The shared read/write contract for future ingestion is a single generic series:
+The shared read/write contract is a single generic series:
 
 ```text
 osira_item_value{node_id="01K...",item_key="custom.nginx.connections",...} 42
@@ -373,8 +373,9 @@ VictoriaMetrics connectivity is configured by environment variables:
 - `VICTORIAMETRICS_TIMEOUT`
 
 The development Compose stack includes a local VictoriaMetrics container on
-`http://localhost:8428`. This is for development and testing only; the API
-still acts strictly as the control-plane read proxy.
+`http://localhost:8428`. This is for development and testing only. The API
+proxies controlled metric reads and accepts authenticated agent writes through
+the dedicated ingestion contract below.
 
 Node and node-group collections are paginated with `page` and `itemsPerPage`
 (25 items by default, 100 maximum). Collection responses expose the records in
@@ -399,6 +400,52 @@ plane. Osira agents never use these accounts: initial registration uses a
 single-use `EnrollmentToken`, then the agent uses its own `AgentCredential`.
 `POST /api/agents/enroll` therefore intentionally remains public at the user
 authentication layer.
+
+## Agent metric ingestion
+
+Agents submit collected values with their dedicated `AgentCredential`:
+
+```http
+POST /api/agent/metrics
+Authorization: Bearer osi_agent_...
+Content-Type: application/json
+```
+
+```json
+{
+  "samples": [
+    {
+      "itemKey": "custom.cpu.usage",
+      "value": 82.5,
+      "collectedAt": "2026-08-27T10:00:00+00:00"
+    }
+  ]
+}
+```
+
+The request accepts 1 to 500 samples and returns `{"accepted": 1}`. The batch is
+validated atomically: any unknown or ineffective item, incompatible value, or invalid
+timestamp rejects the complete batch before storage. `itemKey` is the same stable key
+returned by `/api/agent/config`; callers cannot provide a Node identifier. Float values
+must be JSON numbers, integers JSON integers, and booleans JSON booleans. Numeric strings
+are not coerced. `collectedAt` is optional; when present it must be RFC3339 with an
+explicit timezone and cannot be more than five minutes in the future. Server time is
+used when it is absent.
+
+Validated batches are written to VictoriaMetrics in one JSONL import request and only
+the affected items are evaluated. PostgreSQL stores Incident lifecycle state, not metric
+samples. A retry of the same Node/item/timestamp overwrites the same natural time-series
+point and does not increment the active Incident again. There is no batch or sample ID
+in V1; changing a value while reusing a timestamp is outside the retry contract.
+
+Before the first `FIRING` transition there is no Incident row yet, so `lastTriggeredAt`
+cannot guard a retry during the pending phase. Instead, `AlertRuleEvaluator` deduplicates
+same-timestamp points before counting `requiredOccurrences`, so a retried or duplicated
+sample never counts as a second distinct occurrence even if VictoriaMetrics itself returns
+more than one raw point for that instant. An evaluation only looks backward from the
+batch's own latest `collectedAt` per item; an out-of-order sample does not retroactively
+re-trigger an evaluation that already ran, but a later request whose own timestamp reaches
+far enough forward will see every previously stored instant regardless of arrival order.
 
 ## Alert evaluation and incidents
 

@@ -56,6 +56,7 @@ final class ApiDocumentationTest extends ApiTestCase
         $metricRangePath = self::objectAt($paths, '/api/metrics/query-range');
         $nodeMetricsPath = self::objectAt($paths, '/api/nodes/{id}/metrics');
         $agentConfigPath = self::objectAt($paths, '/api/agent/config');
+        $agentMetricsPath = self::objectAt($paths, '/api/agent/metrics');
         $agentCredentialRotatePath = self::objectAt($paths, '/api/agent/credentials/rotate');
         $agentCredentialRevokePath = self::objectAt($paths, '/api/agent-credentials/{id}/revoke');
         $incidentCollectionPath = self::objectAt($paths, '/api/incidents');
@@ -91,6 +92,9 @@ final class ApiDocumentationTest extends ApiTestCase
         self::assertArrayHasKey('get', $metricRangePath);
         self::assertArrayHasKey('get', $nodeMetricsPath);
         self::assertArrayHasKey('get', $agentConfigPath);
+        self::assertArrayHasKey('post', $agentMetricsPath);
+        self::assertStringContainsString('AgentBearer', json_encode($agentMetricsPath, \JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('nodeId', json_encode($agentMetricsPath, \JSON_THROW_ON_ERROR));
         self::assertArrayHasKey('post', $agentCredentialRotatePath);
         self::assertArrayHasKey('post', $agentCredentialRevokePath);
         self::assertArrayHasKey('get', $incidentCollectionPath);
@@ -125,6 +129,10 @@ final class ApiDocumentationTest extends ApiTestCase
         $agentConfig = json_encode(self::objectAt($schemas, 'AgentConfig'), \JSON_THROW_ON_ERROR);
         self::assertStringContainsString('execution', $agentConfig);
         self::assertStringContainsString('powershell', $agentConfig);
+        $agentMetricInput = json_encode(self::objectAt($schemas, 'AgentMetricIngestion.AgentMetricBatchInput'), \JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('itemKey', $agentMetricInput);
+        self::assertStringContainsString('collectedAt', $agentMetricInput);
+        self::assertStringContainsString('500', $agentMetricInput);
         self::assertArrayHasKey('NodeCollection', $schemas);
         self::assertArrayHasKey('NodeGroupCollection', $schemas);
         self::assertArrayHasKey('CurrentUser', $schemas);
@@ -177,6 +185,7 @@ final class ApiDocumentationTest extends ApiTestCase
             'EnrollmentToken',
             'AgentEnrollment',
             'AgentConfig',
+            'AgentMetricIngestion',
             'AgentCredential',
             'Audit',
         ], $names);

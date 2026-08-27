@@ -55,6 +55,30 @@ final class AlertRuleEvaluatorTest extends TestCase
         self::assertSame(AlertEvaluationStatus::OK, (new AlertRuleEvaluator())->evaluate($rule, $this->series([], ['91', '89', '92'], $now), $now, false)->status);
     }
 
+    public function testDuplicatePointsAtTheSameTimestampCountAsOneOccurrence(): void
+    {
+        // A retransmitted sample (network retry, duplicate within a batch) can make
+        // VictoriaMetrics return more than one raw point for the exact same instant
+        // when the deployment has no dedup interval configured. requiredOccurrences
+        // must count distinct collection instants, not raw points.
+        $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');
+        $rule = $this->rule(ItemValueType::FLOAT, AlertOperator::GT, '90', 300, 3);
+        $t10 = $now->modify('-20 seconds');
+        $t20 = $now->modify('-10 seconds');
+
+        $duplicated = new VictoriaMetricsRangeSeries([], [
+            new VictoriaMetricsRangeSeriesPoint($t10, '95'),
+            new VictoriaMetricsRangeSeriesPoint($t10, '95'),
+            new VictoriaMetricsRangeSeriesPoint($t10, '95'),
+            new VictoriaMetricsRangeSeriesPoint($t20, '95'),
+        ]);
+
+        $result = (new AlertRuleEvaluator())->evaluate($rule, $duplicated, $now, false);
+
+        self::assertSame(AlertEvaluationStatus::OK, $result->status);
+        self::assertSame(2, $result->matchingOccurrences);
+    }
+
     public function testRecoveryThresholdProvidesHysteresis(): void
     {
         $now = new \DateTimeImmutable('2026-08-25T12:00:00+00:00');

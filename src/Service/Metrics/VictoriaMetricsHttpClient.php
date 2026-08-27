@@ -16,6 +16,39 @@ final readonly class VictoriaMetricsHttpClient implements VictoriaMetricsClientI
     ) {
     }
 
+    public function importSamples(array $samples): void
+    {
+        $series = [];
+        foreach ($samples as $sample) {
+            $timestampMilliseconds = ((int) $sample->collectedAt->format('U')) * 1000 + (int) substr($sample->collectedAt->format('u'), 0, 3);
+            $key = $sample->nodeId."\0".$sample->itemKey;
+            $series[$key] ??= [
+                'metric' => ['__name__' => ItemDefinitionMetricQueryFactory::METRIC_NAME, 'node_id' => $sample->nodeId, 'item_key' => $sample->itemKey],
+                'values' => [],
+                'timestamps' => [],
+            ];
+            $series[$key]['values'][] = (float) $sample->value;
+            $series[$key]['timestamps'][] = $timestampMilliseconds;
+        }
+        $lines = array_map(static fn (array $row): string => json_encode($row, \JSON_THROW_ON_ERROR), array_values($series));
+
+        try {
+            $response = $this->httpClient->request('POST', rtrim($this->baseUrl, '/').'/api/v1/import', [
+                'body' => implode("\n", $lines)."\n",
+                'headers' => ['Content-Type' => 'application/json'],
+                'timeout' => $this->timeoutSeconds,
+            ]);
+            $status = $response->getStatusCode();
+        } catch (TransportExceptionInterface $exception) {
+            $this->throwTransportException($exception);
+        } catch (\Throwable $exception) {
+            throw new VictoriaMetricsInvalidResponseException('VictoriaMetrics rejected the metric batch.', 0, $exception);
+        }
+        if ($status < 200 || $status >= 300) {
+            throw new VictoriaMetricsInvalidResponseException('VictoriaMetrics rejected the metric batch.');
+        }
+    }
+
     public function instantQuery(string $query): array
     {
         $payload = $this->request('/api/v1/query', ['query' => $query]);
@@ -48,12 +81,7 @@ final readonly class VictoriaMetricsHttpClient implements VictoriaMetricsClientI
             /** @var array<string, mixed> $payload */
             $payload = $response->toArray(false);
         } catch (TransportExceptionInterface $exception) {
-            $message = strtolower($exception->getMessage());
-            if (str_contains($message, 'timeout')) {
-                throw new VictoriaMetricsTimeoutException('VictoriaMetrics request timed out.', 0, $exception);
-            }
-
-            throw new VictoriaMetricsUnavailableException('VictoriaMetrics is unavailable.', 0, $exception);
+            $this->throwTransportException($exception);
         } catch (\Throwable $exception) {
             throw new VictoriaMetricsInvalidResponseException('VictoriaMetrics returned an unreadable payload.', 0, $exception);
         }
@@ -63,6 +91,15 @@ final readonly class VictoriaMetricsHttpClient implements VictoriaMetricsClientI
         }
 
         return $payload;
+    }
+
+    private function throwTransportException(TransportExceptionInterface $exception): never
+    {
+        if (str_contains(strtolower($exception->getMessage()), 'timeout')) {
+            throw new VictoriaMetricsTimeoutException('VictoriaMetrics request timed out.', 0, $exception);
+        }
+
+        throw new VictoriaMetricsUnavailableException('VictoriaMetrics is unavailable.', 0, $exception);
     }
 
     /** @param array<string, mixed> $payload

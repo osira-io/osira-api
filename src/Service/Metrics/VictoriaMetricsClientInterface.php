@@ -6,6 +6,9 @@ namespace App\Service\Metrics;
 
 interface VictoriaMetricsClientInterface
 {
+    /** @param list<VictoriaMetricsWriteSample> $samples */
+    public function importSamples(array $samples): void;
+
     /** @return list<VictoriaMetricsSample> */
     public function instantQuery(string $query): array;
 

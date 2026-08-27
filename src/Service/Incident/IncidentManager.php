@@ -40,6 +40,12 @@ final readonly class IncidentManager
             $this->lockIdentity($identity);
             $incident = $this->incidents->findActiveByIdentity($identity);
 
+            // Agent retries re-import the same VictoriaMetrics point. Do not count an
+            // evaluation at the same (or an older) collection time twice.
+            if ($incident instanceof Incident && $result->evaluatedAt <= $incident->lastTriggeredAt()) {
+                return $incident;
+            }
+
             if (AlertEvaluationStatus::FIRING === $result->status) {
                 $value = $result->observedValue ?? '';
                 if ($incident instanceof Incident) {

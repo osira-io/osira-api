@@ -112,7 +112,7 @@ Examples:
 - Never persist or expose raw secrets, token values, password hashes, or credential material.
 - Control-plane Agent API endpoints must authenticate with dedicated `AgentCredential` bearer secrets (`osi_agent_*`), never with the user JWT.
 - The enrollment contract is `EnrollmentToken -> Symfony enrollment -> AgentCredential -> /api/agent/config`; keep the raw agent secret one-time only and store only its hash.
-- Future data-plane metric ingestion is separate from the control-plane credential and must not be coupled to the Symfony user auth path.
+- `/api/agent/metrics` authenticates with the dedicated `AgentCredential`, derives the Node from that identity, and must never accept a caller-selected Node or use the Symfony user JWT path.
 - Audit business-significant changes when the resource is already part of the audited surface or when the new capability materially changes system state.
 - Keep OpenAPI accurate after API changes.
 
@@ -139,6 +139,16 @@ Examples:
 - `AlertRule` is fully configurable through `/api/alert-rules` (CRUD). A rule targets exactly one `ItemDefinition` (immutable after creation) and may additionally be assigned to any mix of MonitoringTemplate, NodeGroup, and Node — assignment is deliberately more flexible than the Item inheritance chain and reuses `AlertRuleAssignmentValidator` for every scope (a Template-scoped rule's item must belong to that Template; a NodeGroup-scoped rule's item must be served by one of the group's enabled Templates; a Node-scoped rule's item must be effective for that Node — enabled, OS-compatible command, metric-compatible value type). A rule can never target a `string`-valued `ItemDefinition`: string items are not collected as metrics in V1.
 - `AlertRule.impactType` (`availability`, `performance`, `informational`) is mandatory on create and explicitly chosen by the caller — never inferred from the ItemDefinition key, operator, or severity. Only `availability` Incidents contribute to SLA downtime.
 - `AlertRule.expectedValue` is the final, single name for the comparison value used by every operator (thresholds and equality checks alike); there is no separate `threshold` field. The Incident's `title` is always derived from `AlertRule.name`, and its `message` is always derived from `AlertRule.description` (falling back to `name` when no description is set). `title`/`message` are not independently configurable in V1.
+
+## Agent metric ingestion
+
+- `POST /api/agent/metrics` accepts an atomic batch of 1 to 500 samples using the stable `ItemDefinition.key`; `nodeId` is not part of the contract.
+- Each sample contains `itemKey`, a strictly typed JSON `value`, and an optional RFC3339 `collectedAt` with an explicit timezone. Missing `collectedAt` uses server time; timestamps more than five minutes in the future are rejected.
+- Only float, integer, and boolean effective items are accepted. Float accepts JSON integers or numbers, integer requires a JSON integer, and boolean requires a JSON boolean. Numeric strings are rejected.
+- Resolve effective items once per request and index them locally. Reject the complete batch before writing when any sample is invalid or inaccessible to the authenticated Node.
+- Persist samples in one VictoriaMetrics JSONL import request using `osira_item_value{node_id,item_key}`. PostgreSQL never stores metric samples.
+- Evaluate only the affected ItemDefinitions after the write. A retry with the same Node, item key, and collection timestamp reuses the VictoriaMetrics sample identity and must not increment an Incident twice. `IncidentManager` guards against this once an Incident already exists (`evaluatedAt <= lastTriggeredAt` is a no-op), but before the first `FIRING` transition there is no Incident row to guard with — so `AlertRuleEvaluator` deduplicates same-timestamp points before counting `requiredOccurrences`, keeping the pending-phase count equal to the number of distinct collection instants regardless of how many raw duplicate points VictoriaMetrics returns for a retried timestamp.
+- An evaluation only looks backward from the batch's own latest `collectedAt` per item, across the whole window already stored in VictoriaMetrics. An out-of-order (older) sample arriving after a newer one does not retroactively re-run an evaluation that already happened; a subsequent request whose own latest timestamp reaches far enough forward will see every previously stored instant regardless of arrival order. No sample is lost or double-counted, but firing can be delayed until such a request arrives.
 
 ## Incident notifications
 

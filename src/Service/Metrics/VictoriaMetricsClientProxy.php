@@ -27,6 +27,11 @@ final class VictoriaMetricsClientProxy implements VictoriaMetricsClientInterface
         return (self::$override ?? $this->inner)->instantQuery($query);
     }
 
+    public function importSamples(array $samples): void
+    {
+        (self::$override ?? $this->inner)->importSamples($samples);
+    }
+
     public function rangeQuery(string $query, \DateTimeImmutable $from, \DateTimeImmutable $to, int $stepSeconds): array
     {
         return (self::$override ?? $this->inner)->rangeQuery($query, $from, $to, $stepSeconds);
