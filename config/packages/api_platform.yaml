@@ -24,6 +24,9 @@ api_platform:
         App\Service\Shared\Exception\ResourceNotFoundException: 404
         App\Service\Shared\Exception\ResourceConflictException: 409
         App\Service\Shared\Exception\ResourceValidationException: 422
+        App\Service\Metrics\VictoriaMetricsInvalidResponseException: 502
+        App\Service\Metrics\VictoriaMetricsUnavailableException: 503
+        App\Service\Metrics\VictoriaMetricsTimeoutException: 504
     defaults:
         stateless: true
         pagination_client_enabled: false
